@@ -62,7 +62,7 @@ if (isset ( $_POST ['submitReport'] )) {
 	createDataPackagesDownloadsInputData ( $beginDate, $endDate );
 	createDataPackagesArchiveDownloadsInputData ( $beginDate, $endDate );
 	// sleep ( 5 );
-	// updateTotalDataPackagesInputData ( $beginDate, $endDate );
+	updateTotalDataPackagesInputData ( $beginDate, $endDate );
 	recentlyPublishedDataSetsInput ( $endDate );
 	
 	if (isset ( $_SESSION ['totalDataPackages'] )) {
