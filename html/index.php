@@ -305,7 +305,7 @@ function recentlyPublishedDataSets($xmlData) {
 			<div class="collapse navbar-collapse">
 				<ul class="nav navbar-nav">
 					<li class="active"><a href="index.php">Home</a></li>
-					<li><a href="about.html">About</a></li>
+					<li><a href="aboutPage.html">About</a></li>
 					<li><a href="contact.html">Contact</a></li>
 				</ul>
 			</div>
@@ -315,14 +315,15 @@ function recentlyPublishedDataSets($xmlData) {
 
 	<div class="container">
 		<div class="starter-template">
-			<h1>Welcome to LTER Network Information System Report</h1>
+			<h1>Welcome to LTER Network Information System Reporting Tool</h1>
 			<br>
 			<p class="lead">This report describes the current status of the data
 				package inventory as published in the LTER network information
 				system. It is produced to highlight the volume of public access data
 				produced by the LTER network of research sites. This report is
 				intended for the LTER Executive Board, National Science Foundation
-				program officers, and other interested parties</p>
+				program officers, and other interested parties</p><hr>
+				
 		</div>
 
 		<div class="col-md-12">
@@ -331,7 +332,7 @@ function recentlyPublishedDataSets($xmlData) {
 			echo'<script> alert("Unable to generate the report. Please verify the login credentials and try again.");
 			window.location="index.php"; </script> ';
 		} ?>
-		
+		<p align="center"><i>Please provide the login information to generate LTER Network System Report. <br>Please note that the report generation may take time.</i> </p>
 		<?php if (!isset ( $_POST ['submitReport'] )) { ?>
 			<form id="reportForm" class="form-signin" method="POST"
 				action="index.php">
@@ -345,7 +346,7 @@ function recentlyPublishedDataSets($xmlData) {
 		<?php }?>
 		
 			<div class="starter-template" id="afterSubmit">
-				<p class="lead">Please wait while we generate your report.....</p>
+				<p class="lead">Please wait while we generate the report.....</p>
 			</div>
 		<?php
 		if (isset ( $_SESSION ['totalDataPackages20131'] )) {
