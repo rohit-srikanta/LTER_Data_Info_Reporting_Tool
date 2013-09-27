@@ -17,92 +17,113 @@
 
 </head>
 <?php
-function callAuditReportTool($url, $returnValue) {
+ 
+if (isset ( $_POST ['submitReport'] )) {
+	
+	if (isset ( $_SESSION ['ErrorDuringReportGeneration'] ))
+		unset ( $_SESSION ['ErrorDuringReportGeneration'] );
+	
+	$success = generateReport();
+	if($success == false)
+		$_SESSION['ErrorDuringReportGeneration'] = true;
+}
+
+function callAuditReportTool($url, $username, $password, $returnValue) {
 	$curl = curl_init ();
 	// Optional Authentication:
 	curl_setopt ( $curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC );
-	curl_setopt ( $curl, CURLOPT_USERPWD, "uid=CAP,o=LTER,dc=ecoinformatics,dc=org:CAP1CAP" );
-	
+	curl_setopt ( $curl, CURLOPT_USERPWD, "uid=" . $username . ",o=LTER,dc=ecoinformatics,dc=org:" . $password );
+
 	curl_setopt ( $curl, CURLOPT_URL, $url );
 	curl_setopt ( $curl, CURLOPT_RETURNTRANSFER, true );
-	
+
 	curl_setopt ( $curl, CURLOPT_FAILONERROR, true );
 	curl_setopt ( $curl, CURLOPT_FOLLOWLOCATION, true );
-	
+
 	$retValue = curl_exec ( $curl );
 	curl_close ( $curl );
 	$_SESSION [$returnValue] = $retValue;
 }
-function returnAuditReportToolOutput($url) {
+function returnAuditReportToolOutput($url, $username, $password) {
 	$curl = curl_init ();
 	// Optional Authentication:
 	curl_setopt ( $curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC );
-	curl_setopt ( $curl, CURLOPT_USERPWD, "uid=CAP,o=LTER,dc=ecoinformatics,dc=org:CAP1CAP" );
-	
+	curl_setopt ( $curl, CURLOPT_USERPWD, "uid=" . $username . ",o=LTER,dc=ecoinformatics,dc=org:" . $password );
+
 	curl_setopt ( $curl, CURLOPT_URL, $url );
 	curl_setopt ( $curl, CURLOPT_RETURNTRANSFER, true );
-	
+
 	curl_setopt ( $curl, CURLOPT_FAILONERROR, true );
 	curl_setopt ( $curl, CURLOPT_FOLLOWLOCATION, true );
-	
+
 	$retValue = curl_exec ( $curl );
 	curl_close ( $curl );
 	return $retValue;
 }
 
-if (isset ( $_POST ['submitReport'] )) {
+function generateReport() {
 	session_start ();
+	
+	$username = $_POST ['username'];
+	$password = $_POST ['password'];
+	
 	date_default_timezone_set ( 'MST' );
 	$endDate = date ( "Y-m-d" );
 	$beginDate = new DateTime ( date ( DATE_ATOM, mktime ( 0, 0, 0, date ( "m" ), date ( "d" ), date ( "Y" ) - 1 ) ) );
 	$beginDate = $beginDate->format ( "Y-m-d" );
 	
 	createTotalDataPackagesInputData ( $beginDate, $endDate );
-	sleep ( 5 );
-	createDataPackagesDownloadsInputData ( $beginDate, $endDate );
-	createDataPackagesArchiveDownloadsInputData ( $beginDate, $endDate );
-	// sleep ( 5 );
-	updateTotalDataPackagesInputData ( $beginDate, $endDate );
-	recentlyPublishedDataSetsInput ( $endDate );
 	
-	if (isset ( $_SESSION ['totalDataPackages'] )) {
-		createTotalDataPackagesOutput ( $_SESSION ['totalDataPackages'], $beginDate, $endDate );
-		recentlyPublishedDataSets ( $_SESSION ['totalDataPackages'] );
+	if($_SESSION ['totalDataPackages'] == null)
+	{		
+		unset ( $_SESSION ['submitReport']);
+		return false;
 	}
+	if (isset ( $_SESSION ['totalDataPackages'] ) && $_SESSION ['totalDataPackages'] != null)
+		createTotalDataPackagesOutput ( $_SESSION ['totalDataPackages'], $beginDate, $endDate );
 	
-	if (isset ( $_SESSION ['updateDataPackages'] ))
+	sleep ( 5 );
+	
+	updateTotalDataPackagesInputData ( $beginDate, $endDate );
+	if (isset ( $_SESSION ['updateDataPackages'] ) && $_SESSION ['updateDataPackages'] != null)
 		updateDataPackagesOutput ( $_SESSION ['updateDataPackages'], $beginDate, $endDate );
 	
-	if (isset ( $_SESSION ['dataPackageDownloads'] ))
+	createDataPackagesDownloadsInputData ( $beginDate, $endDate );
+	if (isset ( $_SESSION ['dataPackageDownloads'] ) && $_SESSION ['dataPackageDownloads'] != null)
 		createDataPackagesDownloadOutput ( $_SESSION ['dataPackageDownloads'], $beginDate, $endDate );
 	
-	if (isset ( $_SESSION ['dataPackageArchiveDownloads'] ))
+	createDataPackagesArchiveDownloadsInputData ( $beginDate, $endDate );
+	if (isset ( $_SESSION ['dataPackageArchiveDownloads'] ) && $_SESSION ['dataPackageArchiveDownloads'] != null)
 		createDataPackagesArchiveDownloadOutput ( $_SESSION ['dataPackageArchiveDownloads'], $beginDate, $endDate );
 	
-	if (isset ( $_SESSION ['recentlyCreatedDataPackages'] ))
+	recentlyPublishedDataSetsInput ( $endDate );
+	if (isset ( $_SESSION ['recentlyCreatedDataPackages'] ) && $_SESSION ['recentlyCreatedDataPackages'] != null)
 		recentlyPublishedDataSets ( $_SESSION ['recentlyCreatedDataPackages'] );
+	
+	return true;
 }
+
 function createTotalDataPackagesInputData($beginDate, $endDate) {
 	$url = "http://pasta.lternet.edu/audit/report/?serviceMethod=createDataPackage&status=200&fromTime=" . $beginDate . "&toTime=" . $endDate;
-	callAuditReportTool ( $url, "totalDataPackages" );
+	callAuditReportTool ( $url, $_POST ['username'], $_POST ['password'], "totalDataPackages" );
 }
 function createDataPackagesDownloadsInputData($beginDate, $endDate) {
 	$url = "http://pasta.lternet.edu/audit/report/?serviceMethod=readDataEntity&status=200&fromTime=" . $beginDate . "&toTime=" . $endDate;
-	callAuditReportTool ( $url, "dataPackageDownloads" );
+	callAuditReportTool ( $url, $_POST ['username'], $_POST ['password'], "dataPackageDownloads" );
 }
 function createDataPackagesArchiveDownloadsInputData($beginDate, $endDate) {
 	$url = "http://pasta.lternet.edu/audit/report/?serviceMethod=readDataPackageArchive&status=200&fromTime=" . $beginDate . "&toTime=" . $endDate;
-	callAuditReportTool ( $url, "dataPackageArchiveDownloads" );
+	callAuditReportTool ( $url, $_POST ['username'], $_POST ['password'], "dataPackageArchiveDownloads" );
 }
 function updateTotalDataPackagesInputData($beginDate, $endDate) {
 	$url = "http://pasta.lternet.edu/audit/report/?serviceMethod=updateDataPackage&status=200&fromTime=" . $beginDate . "&toTime=" . $endDate;
-	callAuditReportTool ( $url, "updateDataPackages" );
+	callAuditReportTool ( $url, $_POST ['username'], $_POST ['password'], "updateDataPackages" );
 }
 function recentlyPublishedDataSetsInput($endDate) {
 	$newBeginDate = new DateTime ( date ( DATE_ATOM, mktime ( 0, 0, 0, date ( "m" ) - 3, date ( "d" ), date ( "Y" ) ) ) );
 	$newBeginDate = $newBeginDate->format ( "Y-m-d" );
 	$url = "http://pasta.lternet.edu/audit/report/?serviceMethod=createDataPackage&status=200&fromTime=" . $newBeginDate . "&toTime=" . $endDate;
-	callAuditReportTool ( $url, "recentlyCreatedDataPackages" );
+	callAuditReportTool ( $url, $_POST ['username'], $_POST ['password'], "recentlyCreatedDataPackages" );
 }
 function createTotalDataPackagesOutput($xmlData, $beginDate, $endDate) {
 	$responseXML = new SimpleXMLElement ( $xmlData );
@@ -225,13 +246,13 @@ function recentlyPublishedDataSets($xmlData) {
 	
 	for($i = 0; $i < 10; $i ++) {
 		$url = "http://pasta.lternet.edu/package/metadata/eml/" . $recentDataPackages [$randomNumbers [$i]];
-		$returnvalue = returnAuditReportToolOutput ( $url );
+		$returnvalue = returnAuditReportToolOutput ( $url, $_POST ['username'], $_POST ['password'] );
 		
 		$XML = new SimpleXMLElement ( $returnvalue );
 		$authorName = "";
 		$authorCount = 0;
 		foreach ( $XML->dataset->creator as $name ) {
-			if ($name->individualName != null) {
+			if ($name->individualName != "") {
 				if ($authorCount != 0)
 					$tempName = ( string ) ", " . $name->individualName->givenName . " " . ( string ) $name->individualName->surName;
 				else
@@ -241,11 +262,25 @@ function recentlyPublishedDataSets($xmlData) {
 			}
 		}
 		
+		if ($authorName == null || $authorName == "" || $authorName == ",") {
+			foreach ( $XML->dataset->creator as $name ) {
+				if ($authorCount != 0)
+					$tempName = ( string ) ", " . $name->organizationName;
+				else
+					$tempName = ( string ) $name->organizationName;
+				$authorCount ++;
+				$authorName = $authorName . $tempName;
+			}
+		}
+		$scope = strstr ( $recentDataPackages [$randomNumbers [$i]], '/', true );
+		$identifier = strstr ( $recentDataPackages [$randomNumbers [$i]], '/' );
+		$identifier = strstr ( substr ( $identifier, 1 ), '/', true );
 		$temp = array (
-				"name" => str_replace ( "/", ".", $recentDataPackages [$randomNumbers [$i]] ),
+				"name" => ( string ) str_replace ( "/", ".", $recentDataPackages [$randomNumbers [$i]] ),
 				"title" => ( string ) $XML->dataset->title,
 				"date" => ( string ) $XML->dataset->pubDate,
-				"author" => $authorName 
+				"author" => ( string ) $authorName,
+				"identifierLink" => ( string ) "https://portal.lternet.edu/nis/mapbrowse?scope=" . $scope . "&identifier=" . $identifier 
 		);
 		$packageDetails [$i] = $temp;
 		$authorName = "";
@@ -264,14 +299,14 @@ function recentlyPublishedDataSets($xmlData) {
 					<span class="icon-bar"></span> <span class="icon-bar"></span> <span
 						class="icon-bar"></span>
 				</button>
-				<a class="navbar-brand" href="#">LTER Network Information System
-					Report</a>
+				<a class="navbar-brand" href="index.php">LTER Network Information
+					System Report</a>
 			</div>
 			<div class="collapse navbar-collapse">
 				<ul class="nav navbar-nav">
-					<li class="active"><a href="#">Home</a></li>
-					<li><a href="#about">About</a></li>
-					<li><a href="#contact">Contact</a></li>
+					<li class="active"><a href="index.php">Home</a></li>
+					<li><a href="about.html">About</a></li>
+					<li><a href="contact.html">Contact</a></li>
 				</ul>
 			</div>
 			<!--/.nav-collapse -->
@@ -292,19 +327,28 @@ function recentlyPublishedDataSets($xmlData) {
 
 		<div class="col-md-12">
 		
+		<?php if (isset ( $_SESSION ['ErrorDuringReportGeneration'] )) {
+			echo'<script> alert("Unable to generate the report. Please verify the login credentials and try again.");
+			window.location="index.php"; </script> ';
+		} ?>
+		
 		<?php if (!isset ( $_POST ['submitReport'] )) { ?>
-			<form class="form-signin" method="POST" action="index.php">
-				<button id="reportButton" class="btn btn-lg btn-primary btn-block"
-					type="submit" name="submitReport">Generate LTER Network Information
-					System Report</button>
+			<form id="reportForm" class="form-signin" method="POST"
+				action="index.php">
+				<input id="username" name="username" type="text"
+					class="form-control" placeholder="Username" autofocus> <input
+					id="password" name="password" type="password" class="form-control"
+					placeholder="Password">
+				<button class="btn btn-lg btn-primary btn-block" type="submit"
+					name="submitReport">Generate LTER Network Information System Report</button>
 			</form>
-		<?php }?>	
+		<?php }?>
+		
 			<div class="starter-template" id="afterSubmit">
 				<p class="lead">Please wait while we generate your report.....</p>
 			</div>
-			
 		<?php
-		if (isset ( $_SESSION ['totalDataPackages'] )) {
+		if (isset ( $_SESSION ['totalDataPackages20131'] )) {
 			
 			?>
 			<div class="starter-template">
@@ -318,7 +362,7 @@ function recentlyPublishedDataSets($xmlData) {
 				style="width: 1000px; height: 400px;"></div><?php
 		}
 		
-		if (isset ( $_SESSION ['dataPackageDownloads'] )) {
+		if (isset ( $_SESSION ['dataPackageDownloads20131'] )) {
 			?>
 					<div class="starter-template">
 				<p class="lead">Number of Data Package Downloads</p>
@@ -331,7 +375,7 @@ function recentlyPublishedDataSets($xmlData) {
 		?>
 		
 		<?php
-		if ((isset ( $_SESSION ['totalDataPackages'] )) && (isset ( $_SESSION ['updateDataPackages'] ))) {
+		if ((isset ( $_SESSION ['totalDataPackages20131'] )) && (isset ( $_SESSION ['updateDataPackages20131'] ))) {
 			
 			?>
 		<div class="starter-template">
@@ -370,8 +414,6 @@ function recentlyPublishedDataSets($xmlData) {
 						
 						</th>
 						<td><?php echo ($_SESSION['updateDataPackages20131'] + $_SESSION['updateDataPackages20132'] + $_SESSION['updateDataPackages20133'] + $_SESSION['updateDataPackages20134']); ?>
-						
-						
 						</th>
 					</tr>
 				</table>
@@ -405,7 +447,7 @@ function recentlyPublishedDataSets($xmlData) {
 			$data = $_SESSION ['recentPackages'];
 			for($i = 0; $i < 10; $i ++) {
 				?><tr>
-						<td><?php echo $data[$i]['name']; ?></td>
+						<td><a href=<?php echo $data[$i]['identifierLink'];?>><?php echo $data[$i]['name']; ?></a></td>
 						<td><?php echo $data[$i]['author']; ?></td>
 						<td><?php echo $data[$i]['date']; ?></td>
 						<td><?php echo $data[$i]['title']; ?></td>
@@ -492,12 +534,17 @@ function recentlyPublishedDataSets($xmlData) {
 
 	<script language="JavaScript">
 	$(document).ready(function() {
-		$('#afterSubmit').hide();
-		$('#reportButton').click(function() {				
-				$('#reportButton').hide();
+		$('#afterSubmit').hide();	
+		$('#reportForm').submit(function() {	
+				if(($('#username').val().length == 0) || ($('#password').val().length == 0)){
+					alert("Please enter username and password for report generation");
+					return false;
+				}		
+				$('#reportForm').hide();
 				$('#afterSubmit').show();
 			
 		}).change();
+		
 	});
 </script>
 </body>
