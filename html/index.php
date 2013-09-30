@@ -17,7 +17,12 @@
 
 </head>
 <?php
- 
+
+//Global declaration of the pasta URL so that if we have to make a change, it can be done in one place.
+$pastaURL = "http://pasta.lternet.edu/";
+
+require_once ('curlWebServiceCalls.php');
+
 if (isset ( $_POST ['submitReport'] )) {
 	
 	if (isset ( $_SESSION ['ErrorDuringReportGeneration'] ))
@@ -26,39 +31,6 @@ if (isset ( $_POST ['submitReport'] )) {
 	$success = generateReport();
 	if($success == false)
 		$_SESSION['ErrorDuringReportGeneration'] = true;
-}
-
-function callAuditReportTool($url, $username, $password, $returnValue) {
-	$curl = curl_init ();
-	// Optional Authentication:
-	curl_setopt ( $curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC );
-	curl_setopt ( $curl, CURLOPT_USERPWD, "uid=" . $username . ",o=LTER,dc=ecoinformatics,dc=org:" . $password );
-
-	curl_setopt ( $curl, CURLOPT_URL, $url );
-	curl_setopt ( $curl, CURLOPT_RETURNTRANSFER, true );
-
-	curl_setopt ( $curl, CURLOPT_FAILONERROR, true );
-	curl_setopt ( $curl, CURLOPT_FOLLOWLOCATION, true );
-
-	$retValue = curl_exec ( $curl );
-	curl_close ( $curl );
-	$_SESSION [$returnValue] = $retValue;
-}
-function returnAuditReportToolOutput($url, $username, $password) {
-	$curl = curl_init ();
-	// Optional Authentication:
-	curl_setopt ( $curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC );
-	curl_setopt ( $curl, CURLOPT_USERPWD, "uid=" . $username . ",o=LTER,dc=ecoinformatics,dc=org:" . $password );
-
-	curl_setopt ( $curl, CURLOPT_URL, $url );
-	curl_setopt ( $curl, CURLOPT_RETURNTRANSFER, true );
-
-	curl_setopt ( $curl, CURLOPT_FAILONERROR, true );
-	curl_setopt ( $curl, CURLOPT_FOLLOWLOCATION, true );
-
-	$retValue = curl_exec ( $curl );
-	curl_close ( $curl );
-	return $retValue;
 }
 
 function generateReport() {
@@ -72,30 +44,33 @@ function generateReport() {
 	$beginDate = new DateTime ( date ( DATE_ATOM, mktime ( 0, 0, 0, date ( "m" ), date ( "d" ), date ( "Y" ) - 1 ) ) );
 	$beginDate = $beginDate->format ( "Y-m-d" );
 	
-	createTotalDataPackagesInputData ( $beginDate, $endDate );
-	
+	$quarter = determineFourQuarters();
+	require_once ('totalNumberOfDataPackages.php');
+	createTotalDataPackagesInputData ( $beginDate, $endDate );	
 	if($_SESSION ['totalDataPackages'] == null)
 	{		
 		unset ( $_SESSION ['submitReport']);
 		return false;
 	}
 	if (isset ( $_SESSION ['totalDataPackages'] ) && $_SESSION ['totalDataPackages'] != null)
-		createTotalDataPackagesOutput ( $_SESSION ['totalDataPackages'], $beginDate, $endDate );
+		createTotalDataPackagesOutput ( $_SESSION ['totalDataPackages'], $quarter );
 	
 	sleep ( 5 );
 	
-	updateTotalDataPackagesInputData ( $beginDate, $endDate );
-	if (isset ( $_SESSION ['updateDataPackages'] ) && $_SESSION ['updateDataPackages'] != null)
-		updateDataPackagesOutput ( $_SESSION ['updateDataPackages'], $beginDate, $endDate );
-	
+	require_once ('dataPackageDownloads.php');
 	createDataPackagesDownloadsInputData ( $beginDate, $endDate );
 	if (isset ( $_SESSION ['dataPackageDownloads'] ) && $_SESSION ['dataPackageDownloads'] != null)
-		createDataPackagesDownloadOutput ( $_SESSION ['dataPackageDownloads'], $beginDate, $endDate );
+		createDataPackagesDownloadOutput ( $_SESSION ['dataPackageDownloads'],$quarter);
 	
 	createDataPackagesArchiveDownloadsInputData ( $beginDate, $endDate );
 	if (isset ( $_SESSION ['dataPackageArchiveDownloads'] ) && $_SESSION ['dataPackageArchiveDownloads'] != null)
-		createDataPackagesArchiveDownloadOutput ( $_SESSION ['dataPackageArchiveDownloads'], $beginDate, $endDate );
+		createDataPackagesArchiveDownloadOutput ( $_SESSION ['dataPackageArchiveDownloads'], $quarter);
 	
+	updateTotalDataPackagesInputData ( $beginDate, $endDate );
+	if (isset ( $_SESSION ['updateDataPackages'] ) && $_SESSION ['updateDataPackages'] != null)
+		updateDataPackagesOutput ( $_SESSION ['updateDataPackages'], $quarter );
+	
+	require_once ('recentlyPublishedDatasets.php');
 	recentlyPublishedDataSetsInput ( $endDate );
 	if (isset ( $_SESSION ['recentlyCreatedDataPackages'] ) && $_SESSION ['recentlyCreatedDataPackages'] != null)
 		recentlyPublishedDataSets ( $_SESSION ['recentlyCreatedDataPackages'] );
@@ -103,191 +78,76 @@ function generateReport() {
 	return true;
 }
 
-function createTotalDataPackagesInputData($beginDate, $endDate) {
-	$url = "http://pasta.lternet.edu/audit/report/?serviceMethod=createDataPackage&status=200&fromTime=" . $beginDate . "&toTime=" . $endDate;
-	callAuditReportTool ( $url, $_POST ['username'], $_POST ['password'], "totalDataPackages" );
-}
-function createDataPackagesDownloadsInputData($beginDate, $endDate) {
-	$url = "http://pasta.lternet.edu/audit/report/?serviceMethod=readDataEntity&status=200&fromTime=" . $beginDate . "&toTime=" . $endDate;
-	callAuditReportTool ( $url, $_POST ['username'], $_POST ['password'], "dataPackageDownloads" );
-}
-function createDataPackagesArchiveDownloadsInputData($beginDate, $endDate) {
-	$url = "http://pasta.lternet.edu/audit/report/?serviceMethod=readDataPackageArchive&status=200&fromTime=" . $beginDate . "&toTime=" . $endDate;
-	callAuditReportTool ( $url, $_POST ['username'], $_POST ['password'], "dataPackageArchiveDownloads" );
-}
-function updateTotalDataPackagesInputData($beginDate, $endDate) {
-	$url = "http://pasta.lternet.edu/audit/report/?serviceMethod=updateDataPackage&status=200&fromTime=" . $beginDate . "&toTime=" . $endDate;
-	callAuditReportTool ( $url, $_POST ['username'], $_POST ['password'], "updateDataPackages" );
-}
-function recentlyPublishedDataSetsInput($endDate) {
-	$newBeginDate = new DateTime ( date ( DATE_ATOM, mktime ( 0, 0, 0, date ( "m" ) - 3, date ( "d" ), date ( "Y" ) ) ) );
-	$newBeginDate = $newBeginDate->format ( "Y-m-d" );
-	$url = "http://pasta.lternet.edu/audit/report/?serviceMethod=createDataPackage&status=200&fromTime=" . $newBeginDate . "&toTime=" . $endDate;
-	callAuditReportTool ( $url, $_POST ['username'], $_POST ['password'], "recentlyCreatedDataPackages" );
-}
-function createTotalDataPackagesOutput($xmlData, $beginDate, $endDate) {
-	$responseXML = new SimpleXMLElement ( $xmlData );
-	$totalRecords = $responseXML->count ();
+function determineFourQuarters() {
+	$month = date ( "m" );
+	$monthList = array (
+			'12' => '12',
+			'11' => '11',
+			'10' => '10',
+			'9' => '9',
+			'8' => '8',
+			'7' => '7',
+			'6' => '6',
+			'5' => '5',
+			'4' => '4',
+			'3' => '3',
+			'2' => '2',
+			'1' => '1' 
+	);
+	$key = array_search ( $month, array_keys ( $monthList ) );
+	$month1 = array_slice ( $monthList, $key );
+	$month2 = array_slice ( $monthList, 0, $key );
+	$newMonthArray = array_merge ( $month1, $month2 );
 	
-	$qtr1 = 0;
-	$qtr2 = 0;
-	$qtr3 = 0;
-	$qtr4 = 0;
-	foreach ( $responseXML as $record ) {
-		$month = substr ( $record->entryTime, 5, 2 );
-		if ($month <= 3)
-			$qtr1 = $qtr1 + 1;
-		if ($month > 3 && $month <= 6)
-			$qtr2 = $qtr2 + 1;
-		if ($month > 6 && $month <= 9)
-			$qtr3 = $qtr3 + 1;
-		if ($month > 9 && $month <= 12)
-			$qtr4 = $qtr4 + 1;
+	$currentQuarter = $month % 3;
+	if ($currentQuarter == 0)
+		$currentQuarter = 3;
+	
+	$quarter ['4'] = array_slice ( $newMonthArray, 0, $currentQuarter );
+	$quarter ['3'] = array_slice ( $newMonthArray, $currentQuarter, 3 );
+	$quarter ['2'] = array_slice ( $newMonthArray, $currentQuarter + 3, 3 );
+	$quarter ['1'] = array_slice ( $newMonthArray, $currentQuarter + 6, 3 );
+	
+	$quarterNames = array (
+			"1st Quarter",
+			"2nd Quarter",
+			"3rd Quarter",
+			"4th Quarter" 
+	);
+	
+	if ($month == 12 || $month == 11 || $month == 10) {
+		$quarterTitle ['4'] = $quarterNames [3];
+		$quarterTitle ['3'] = $quarterNames [2];
+		$quarterTitle ['2'] = $quarterNames [1];
+		$quarterTitle ['1'] = $quarterNames [0];
 	}
 	
-	$_SESSION ['totalDataPackages20131'] = $qtr1;
-	$_SESSION ['totalDataPackages20132'] = $qtr2 + $qtr1;
-	$_SESSION ['totalDataPackages20133'] = $qtr3 + $qtr1 + $qtr2;
-	$_SESSION ['totalDataPackages20134'] = $qtr4 + $qtr1 + $qtr2 + $qtr3;
+	if ($month == 7 || $month == 8 || $month == 9) {
+		$quarterTitle ['4'] = $quarterNames [2];
+		$quarterTitle ['3'] = $quarterNames [1];
+		$quarterTitle ['2'] = $quarterNames [0];
+		$quarterTitle ['1'] = $quarterNames [3];
+	}
 	
-	$_SESSION ['totalDataPackagesCurrentQ'] = $qtr3;
-	$_SESSION ['totalDataPackagesLastQ'] = $qtr2;
-	$_SESSION ['totalDataPackagesAyear'] = 0;
-	$_SESSION ['totalDataPackages12Month'] = $qtr4 + $qtr1 + $qtr2 + $qtr3;
+	if ($month == 5 || $month == 5 || $month == 6) {
+		$quarterTitle ['4'] = $quarterNames [1];
+		$quarterTitle ['3'] = $quarterNames [0];
+		$quarterTitle ['2'] = $quarterNames [3];
+		$quarterTitle ['1'] = $quarterNames [2];
+	}
+	
+	if ($month == 1 || $month == 2 || $month == 3) {
+		$quarterTitle ['4'] = $quarterNames [0];
+		$quarterTitle ['3'] = $quarterNames [1];
+		$quarterTitle ['2'] = $quarterNames [2];
+		$quarterTitle ['1'] = $quarterNames [3];
+	}
+
+	$_SESSION ['quarterTitle'] =  $quarterTitle;
+	
+	return $quarter;
 }
-function createDataPackagesDownloadOutput($xmlData, $beginDate, $endDate) {
-	$responseXML = new SimpleXMLElement ( $xmlData );
-	$totalRecords = $responseXML->count ();
-	
-	$qtr1 = 0;
-	$qtr2 = 0;
-	$qtr3 = 0;
-	$qtr4 = 0;
-	foreach ( $responseXML as $record ) {
-		$month = substr ( $record->entryTime, 5, 2 );
-		if ($month <= 3)
-			$qtr1 = $qtr1 + 1;
-		if ($month > 3 && $month <= 6)
-			$qtr2 = $qtr2 + 1;
-		if ($month > 6 && $month <= 9)
-			$qtr3 = $qtr3 + 1;
-		if ($month > 9 && $month <= 12)
-			$qtr4 = $qtr4 + 1;
-	}
-	
-	$_SESSION ['dataPackageDownloads20131'] = $qtr1;
-	$_SESSION ['dataPackageDownloads20132'] = $qtr2;
-	$_SESSION ['dataPackageDownloads20133'] = $qtr3;
-	$_SESSION ['dataPackageDownloads20134'] = $qtr4;
-}
-function createDataPackagesArchiveDownloadOutput($xmlData, $beginDate, $endDate) {
-	$responseXML = new SimpleXMLElement ( $xmlData );
-	$totalRecords = $responseXML->count ();
-	
-	$qtr1 = 0;
-	$qtr2 = 0;
-	$qtr3 = 0;
-	$qtr4 = 0;
-	foreach ( $responseXML as $record ) {
-		$month = substr ( $record->entryTime, 5, 2 );
-		if ($month <= 3)
-			$qtr1 = $qtr1 + 1;
-		if ($month > 3 && $month <= 6)
-			$qtr2 = $qtr2 + 1;
-		if ($month > 6 && $month <= 9)
-			$qtr3 = $qtr3 + 1;
-		if ($month > 9 && $month <= 12)
-			$qtr4 = $qtr4 + 1;
-	}
-	
-	$_SESSION ['dataPackageArchiveDownloads20131'] = $qtr1;
-	$_SESSION ['dataPackageArchiveDownloads20132'] = $qtr2;
-	$_SESSION ['dataPackageArchiveDownloads20133'] = $qtr3;
-	$_SESSION ['dataPackageArchiveDownloads20134'] = $qtr4;
-}
-function updateDataPackagesOutput($xmlData, $beginDate, $endDate) {
-	$responseXML = new SimpleXMLElement ( $xmlData );
-	$totalRecords = $responseXML->count ();
-	
-	$qtr1 = 0;
-	$qtr2 = 0;
-	$qtr3 = 0;
-	$qtr4 = 0;
-	foreach ( $responseXML as $record ) {
-		$month = substr ( $record->entryTime, 5, 2 );
-		if ($month <= 3)
-			$qtr1 = $qtr1 + 1;
-		if ($month > 3 && $month <= 6)
-			$qtr2 = $qtr2 + 1;
-		if ($month > 6 && $month <= 9)
-			$qtr3 = $qtr3 + 1;
-		if ($month > 9 && $month <= 12)
-			$qtr4 = $qtr4 + 1;
-	}
-	
-	$_SESSION ['updateDataPackages20131'] = $qtr1;
-	$_SESSION ['updateDataPackages20132'] = $qtr2;
-	$_SESSION ['updateDataPackages20133'] = $qtr3;
-	$_SESSION ['updateDataPackages20134'] = $qtr4;
-}
-function recentlyPublishedDataSets($xmlData) {
-	$responseXML = new SimpleXMLElement ( $xmlData );
-	$totalRecords = $responseXML->count ();
-	
-	$j = 0;
-	foreach ( $responseXML as $record ) {
-		$recentDataPackages [$j ++] = substr ( $record->resourceId, 38 );
-	}
-	
-	for($i = 0; $i < 10; $i ++) {
-		$randomNumbers [$i] = mt_rand ( 0, $totalRecords );
-	}
-	sort ( $randomNumbers );
-	
-	for($i = 0; $i < 10; $i ++) {
-		$url = "http://pasta.lternet.edu/package/metadata/eml/" . $recentDataPackages [$randomNumbers [$i]];
-		$returnvalue = returnAuditReportToolOutput ( $url, $_POST ['username'], $_POST ['password'] );
-		
-		$XML = new SimpleXMLElement ( $returnvalue );
-		$authorName = "";
-		$authorCount = 0;
-		foreach ( $XML->dataset->creator as $name ) {
-			if ($name->individualName != "") {
-				if ($authorCount != 0)
-					$tempName = ( string ) ", " . $name->individualName->givenName . " " . ( string ) $name->individualName->surName;
-				else
-					$tempName = ( string ) $name->individualName->givenName . " " . ( string ) $name->individualName->surName;
-				$authorCount ++;
-				$authorName = $authorName . $tempName;
-			}
-		}
-		
-		if ($authorName == null || $authorName == "" || $authorName == ",") {
-			foreach ( $XML->dataset->creator as $name ) {
-				if ($authorCount != 0)
-					$tempName = ( string ) ", " . $name->organizationName;
-				else
-					$tempName = ( string ) $name->organizationName;
-				$authorCount ++;
-				$authorName = $authorName . $tempName;
-			}
-		}
-		$scope = strstr ( $recentDataPackages [$randomNumbers [$i]], '/', true );
-		$identifier = strstr ( $recentDataPackages [$randomNumbers [$i]], '/' );
-		$identifier = strstr ( substr ( $identifier, 1 ), '/', true );
-		$temp = array (
-				"name" => ( string ) str_replace ( "/", ".", $recentDataPackages [$randomNumbers [$i]] ),
-				"title" => ( string ) $XML->dataset->title,
-				"date" => ( string ) $XML->dataset->pubDate,
-				"author" => ( string ) $authorName,
-				"identifierLink" => ( string ) "https://portal.lternet.edu/nis/mapbrowse?scope=" . $scope . "&identifier=" . $identifier 
-		);
-		$packageDetails [$i] = $temp;
-		$authorName = "";
-	}
-	
-	$_SESSION ['recentPackages'] = $packageDetails;
-}
+
 ?>
   <body>
 
@@ -322,8 +182,9 @@ function recentlyPublishedDataSets($xmlData) {
 				system. It is produced to highlight the volume of public access data
 				produced by the LTER network of research sites. This report is
 				intended for the LTER Executive Board, National Science Foundation
-				program officers, and other interested parties</p><hr>
-				
+				program officers, and other interested parties</p>
+			<hr>
+
 		</div>
 
 		<div class="col-md-12">
@@ -332,8 +193,14 @@ function recentlyPublishedDataSets($xmlData) {
 			echo'<script> alert("Unable to generate the report. Please verify the login credentials and try again.");
 			window.location="index.php"; </script> ';
 		} ?>
-		<p align="center"><i>Please provide the login information to generate LTER Network System Report. <br>Please note that the report generation may take time.</i> </p>
+	
 		<?php if (!isset ( $_POST ['submitReport'] )) { ?>
+			<p align="center">
+				<i>Please provide the login information to generate LTER Network
+					System Report. <br>Please note that the report generation may take
+					time.
+				</i>
+			</p>
 			<form id="reportForm" class="form-signin" method="POST"
 				action="index.php">
 				<input id="username" name="username" type="text"
@@ -349,7 +216,7 @@ function recentlyPublishedDataSets($xmlData) {
 				<p class="lead">Please wait while we generate the report.....</p>
 			</div>
 		<?php
-		if (isset ( $_SESSION ['totalDataPackages20131'] )) {
+		if (isset ( $_SESSION ['totalDataPackages4'] )) {
 			
 			?>
 			<div class="starter-template">
@@ -363,7 +230,7 @@ function recentlyPublishedDataSets($xmlData) {
 				style="width: 1000px; height: 400px;"></div><?php
 		}
 		
-		if (isset ( $_SESSION ['dataPackageDownloads20131'] )) {
+		if (isset ( $_SESSION ['dataPackageDownloads4'] )) {
 			?>
 					<div class="starter-template">
 				<p class="lead">Number of Data Package Downloads</p>
@@ -376,7 +243,7 @@ function recentlyPublishedDataSets($xmlData) {
 		?>
 		
 		<?php
-		if ((isset ( $_SESSION ['totalDataPackages20131'] )) && (isset ( $_SESSION ['updateDataPackages20131'] ))) {
+		if ((isset ( $_SESSION ['totalDataPackages4'] )) && (isset ( $_SESSION ['updateDataPackages4'] ))) {
 			
 			?>
 		<div class="starter-template">
@@ -400,21 +267,21 @@ function recentlyPublishedDataSets($xmlData) {
 						<td>Total number of published data packages
 						
 						</th>
-						<td><?php echo $_SESSION['totalDataPackages20133']; ?></td>
-						<td><?php echo $_SESSION['totalDataPackages20132']; ?></td>
+						<td><?php echo $_SESSION['totalDataPackages4']; ?></td>
+						<td><?php echo $_SESSION['totalDataPackages3']; ?></td>
 						<td>0
 						
 						</th>
-						<td><?php echo $_SESSION['totalDataPackages20134']; ?></td>
+						<td><?php echo $_SESSION['totalDataPackages4']; ?></td>
 					</tr>
 					<tr>
 						<td>Number of data package updates/revisions</td>
-						<td><?php echo $_SESSION['updateDataPackages20133']; ?></td>
-						<td><?php echo $_SESSION['updateDataPackages20132']; ?></td>
+						<td><?php echo $_SESSION['updateDataPackages4']; ?></td>
+						<td><?php echo $_SESSION['updateDataPackages3']; ?></td>
 						<td>0
 						
 						</th>
-						<td><?php echo ($_SESSION['updateDataPackages20131'] + $_SESSION['updateDataPackages20132'] + $_SESSION['updateDataPackages20133'] + $_SESSION['updateDataPackages20134']); ?>
+						<td><?php echo ($_SESSION['updateDataPackages1'] + $_SESSION['updateDataPackages2'] + $_SESSION['updateDataPackages3'] + $_SESSION['updateDataPackages4']); ?>
 						</th>
 					</tr>
 				</table>
@@ -423,7 +290,6 @@ function recentlyPublishedDataSets($xmlData) {
 		<?php
 		}
 		?>
-		
 		
 		<?php
 		if (isset ( $_SESSION ['recentlyCreatedDataPackages'] )) {
@@ -473,9 +339,11 @@ function recentlyPublishedDataSets($xmlData) {
 			unset ( $_SESSION ['updateDataPackages'] );
 		
 		if (isset ( $_SESSION ['recentlyCreatedDataPackages'] )) {
-			unset ( $_SESSION ['recentlyCreatedDataPackages'] );
+			unset ( $_SESSION ['recentlyCreatedDataPackages'] );			
 			session_destroy ();
 		}
+		
+		
 		?>
 		</div>
 	</div>
@@ -496,10 +364,10 @@ function recentlyPublishedDataSets($xmlData) {
       function drawChartTotalDataPackages() {
         var data = google.visualization.arrayToDataTable([
           ['Quarter', 'Total Packages'],         
-          ['2013-1st Quarter', <?php echo $_SESSION['totalDataPackages20131']; ?>],
-          ['2013-2nd Quarter', <?php echo $_SESSION['totalDataPackages20132']; ?>],
-          ['2013-3rd Quarter', <?php echo $_SESSION['totalDataPackages20133']; ?>],
-          ['2013-4th Quarter', <?php echo $_SESSION['totalDataPackages20134']; ?>],
+          [<?php echo "'".$_SESSION['quarterTitle']['1']."'"; ?>, <?php echo $_SESSION['totalDataPackages1']; ?>],
+          [<?php echo "'".$_SESSION['quarterTitle']['2']."'"; ?>, <?php echo $_SESSION['totalDataPackages2']; ?>],
+          [<?php echo "'".$_SESSION['quarterTitle']['3']."'"; ?>, <?php echo $_SESSION['totalDataPackages3']; ?>],
+          [<?php echo "'".$_SESSION['quarterTitle']['4']."'"; ?>, <?php echo $_SESSION['totalDataPackages4']; ?>],
         ]);
 
         var options = {
@@ -515,10 +383,10 @@ function recentlyPublishedDataSets($xmlData) {
       function drawChartDataPackageDownloads() {
           var data = google.visualization.arrayToDataTable([ 
             ['Quarter', 'Number of Data Downloads', 'Number of Data Archive Downloads'],      
-            ['2013-1st Quarter', <?php echo $_SESSION['dataPackageDownloads20131']; ?>,  <?php echo $_SESSION['dataPackageArchiveDownloads20131']; ?>],
-            ['2013-2nd Quarter', <?php echo $_SESSION['dataPackageDownloads20132']; ?>,  <?php echo $_SESSION['dataPackageArchiveDownloads20132']; ?>],
-            ['2013-3rd Quarter', <?php echo $_SESSION['dataPackageDownloads20133']; ?>,  <?php echo $_SESSION['dataPackageArchiveDownloads20133']; ?>],
-            ['2013-4th Quarter', <?php echo $_SESSION['dataPackageDownloads20134']; ?>,  <?php echo $_SESSION['dataPackageArchiveDownloads20134']; ?>],
+            [<?php echo "'".$_SESSION['quarterTitle']['1']."'"; ?>, <?php echo $_SESSION['dataPackageDownloads1']; ?>,  <?php echo $_SESSION['dataPackageArchiveDownloads1']; ?>],
+            [<?php echo "'".$_SESSION['quarterTitle']['2']."'"; ?>, <?php echo $_SESSION['dataPackageDownloads2']; ?>,  <?php echo $_SESSION['dataPackageArchiveDownloads2']; ?>],
+            [<?php echo "'".$_SESSION['quarterTitle']['3']."'"; ?>, <?php echo $_SESSION['dataPackageDownloads3']; ?>,  <?php echo $_SESSION['dataPackageArchiveDownloads3']; ?>],
+            [<?php echo "'".$_SESSION['quarterTitle']['4']."'"; ?>, <?php echo $_SESSION['dataPackageDownloads4']; ?>,  <?php echo $_SESSION['dataPackageArchiveDownloads4']; ?>],
           ]);
 
           var options = {
@@ -531,8 +399,11 @@ function recentlyPublishedDataSets($xmlData) {
           var chart = new google.visualization.ColumnChart(document.getElementById('chart_div_dataPackagesDownloads'));
           chart.draw(data, options);
       }
-    </script>
+    
 
+
+
+</script>
 	<script language="JavaScript">
 	$(document).ready(function() {
 		$('#afterSubmit').hide();	
@@ -548,5 +419,9 @@ function recentlyPublishedDataSets($xmlData) {
 		
 	});
 </script>
+
+
+
+
 </body>
 </html>
