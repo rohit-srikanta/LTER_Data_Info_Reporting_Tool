@@ -12,6 +12,6 @@ Number of Data Package Downloads
 Network Summary Statistics and
 Selection of Recently Published Datasets (Last Three Months)
 
-Visit the NIS Community Website for information about upcoming updates to the LTER Network Portal.
+Visit the NIS Community Website(https://nis.lternet.edu:8443/x/agBP) for information about upcoming updates to the LTER Network Portal.
 
-If you have any questions related regarding the tool please email the tech support team.
+If you have any questions related regarding the tool please email the tech support team at tech-support@lternet.edu
