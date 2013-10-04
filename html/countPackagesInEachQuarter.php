@@ -1,14 +1,13 @@
-<?php 
-
-function countPackages($quarter, $data){
+<?php
+function countPackages($quarter, $data) {
 	$qtr1 = 0;
 	$qtr2 = 0;
 	$qtr3 = 0;
 	$qtr4 = 0;
-
+	
 	foreach ( $data as $record ) {
 		$month = substr ( $record->entryTime, 5, 2 );
-		if (in_array ( $month, $quarter['1'] ))
+		if (in_array ( $month, $quarter ['1'] ))
 			$qtr1 = $qtr1 + 1;
 		else if (in_array ( $month, $quarter ['2'] ))
 			$qtr2 = $qtr2 + 1;
@@ -22,7 +21,8 @@ function countPackages($quarter, $data){
 	$totalCount ['2'] = $qtr2;
 	$totalCount ['3'] = $qtr3;
 	$totalCount ['4'] = $qtr4;
-		
+	
 	return $totalCount;
 }
+
 ?>

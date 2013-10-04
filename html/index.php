@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="">
 <meta name="author" content="">
-<link rel="shortcut icon" href="../assets/ico/favicon.png">
+<link rel="shortcut icon" href="../assets/ico/LTER.png">
 
 <title>LTER Network Information System Reporting Tool</title>
 
@@ -13,24 +13,32 @@
 <link href="../dist/css/bootstrap.css" rel="stylesheet">
 
 <!-- Custom styles for this template -->
-<link href="index.css" rel="stylesheet">
+<link href="../assets/css/index.css" rel="stylesheet">
 
 </head>
 <?php
 
 //Global declaration of the pasta URL so that if we have to make a change, it can be done in one place.
 $pastaURL = "http://pasta.lternet.edu/";
+$errorStatus = "";
 
 require_once ('curlWebServiceCalls.php');
 
 if (isset ( $_POST ['submitReport'] )) {
 	
-	if (isset ( $_SESSION ['ErrorDuringReportGeneration'] ))
-		unset ( $_SESSION ['ErrorDuringReportGeneration'] );
+	global $errorStatus;
+	$errorStatus="";
 	
-	$success = generateReport();
-	if($success == false)
-		$_SESSION['ErrorDuringReportGeneration'] = true;
+	$reportGenerationStatus = generateReport();
+	
+	if($reportGenerationStatus == "invalidLogin"){
+		global $errorStatus;
+		$errorStatus="invalidLogin";
+	}
+	if($reportGenerationStatus != "success" && $reportGenerationStatus != "invalidLogin"){
+		global $errorStatus;
+		$errorStatus="reportError";
+	}
 }
 
 function generateReport() {
@@ -43,19 +51,19 @@ function generateReport() {
 	$endDate = date ( "Y-m-d" );
 	$beginDate = new DateTime ( date ( DATE_ATOM, mktime ( 0, 0, 0, date ( "m" ), date ( "d" ), date ( "Y" ) - 1 ) ) );
 	$beginDate = $beginDate->format ( "Y-m-d" );
+
+	if (!authenticateUser()) {
+		unset ( $_SESSION ['submitReport'] );
+		return "invalidLogin";
+	}
 	
 	$quarter = determineFourQuarters();
 	require_once ('totalNumberOfDataPackages.php');
-	createTotalDataPackagesInputData ( $beginDate, $endDate );	
-	if($_SESSION ['totalDataPackages'] == null)
-	{		
-		unset ( $_SESSION ['submitReport']);
-		return false;
-	}
+	createTotalDataPackagesInputData ( $beginDate, $endDate );
 	if (isset ( $_SESSION ['totalDataPackages'] ) && $_SESSION ['totalDataPackages'] != null)
 		createTotalDataPackagesOutput ( $_SESSION ['totalDataPackages'], $quarter );
-	
-	sleep ( 5 );
+
+	sleep ( 2 );
 	
 	require_once ('dataPackageDownloads.php');
 	createDataPackagesDownloadsInputData ( $beginDate, $endDate );
@@ -70,12 +78,14 @@ function generateReport() {
 	if (isset ( $_SESSION ['updateDataPackages'] ) && $_SESSION ['updateDataPackages'] != null)
 		updateDataPackagesOutput ( $_SESSION ['updateDataPackages'], $quarter );
 	
+	countDataPackagesForYearAgo($quarter);
+	
 	require_once ('recentlyPublishedDatasets.php');
 	recentlyPublishedDataSetsInput ( $endDate );
 	if (isset ( $_SESSION ['recentlyCreatedDataPackages'] ) && $_SESSION ['recentlyCreatedDataPackages'] != null)
 		recentlyPublishedDataSets ( $_SESSION ['recentlyCreatedDataPackages'] );
 	
-	return true;
+	return "success";
 }
 
 function determineFourQuarters() {
@@ -148,6 +158,16 @@ function determineFourQuarters() {
 	return $quarter;
 }
 
+function authenticateUser() {
+	global $pastaURL;
+	$url = $pastaURL . "package/eml";
+	$test = returnAuditReportToolOutput ( $url, $_POST ['username'], $_POST ['password'] );
+	$pos = strpos ( $test, "knb-lter-cap" );
+	if ($pos === false)
+		return false;
+	else 
+		return true;
+}
 ?>
   <body>
 
@@ -175,7 +195,7 @@ function determineFourQuarters() {
 
 	<div class="container">
 		<div class="starter-template">
-			<h1>Welcome to LTER Network Information System Reporting Tool</h1>
+			<h1><img src="../assets/ico/LTER.png">&nbsp;&nbsp;Welcome to LTER Network Information System Reporting Tool</h1>
 			<br>
 			<p class="lead">This report describes the current status of the data
 				package inventory as published in the LTER network information
@@ -184,16 +204,22 @@ function determineFourQuarters() {
 				intended for the LTER Executive Board, National Science Foundation
 				program officers, and other interested parties</p>
 			<hr>
-
 		</div>
 
-		<div class="col-md-12">
+		<div class="col-md-12">	
 		
-		<?php if (isset ( $_SESSION ['ErrorDuringReportGeneration'] )) {
+		 <?php global $errorStatus;
+		 if ($errorStatus === "reportError") {
+			echo'<script> alert("There was a problem during error generation. Please try again.");
+			window.location="index.php"; </script> ';
+		} ?> 
+		
+		<?php global $errorStatus;
+		 if ($errorStatus === "invalidLogin") {
 			echo'<script> alert("Unable to generate the report. Please verify the login credentials and try again.");
 			window.location="index.php"; </script> ';
 		} ?>
-	
+		
 		<?php if (!isset ( $_POST ['submitReport'] )) { ?>
 			<p align="center">
 				<i>Please provide the login information to generate LTER Network
@@ -269,19 +295,15 @@ function determineFourQuarters() {
 						</th>
 						<td><?php echo $_SESSION['totalDataPackages4']; ?></td>
 						<td><?php echo $_SESSION['totalDataPackages3']; ?></td>
-						<td>0
-						
-						</th>
+						<td><?php echo $_SESSION['totalCreateDataPackageAYearAgo']; ?></td>						
 						<td><?php echo $_SESSION['totalDataPackages4']; ?></td>
 					</tr>
 					<tr>
 						<td>Number of data package updates/revisions</td>
 						<td><?php echo $_SESSION['updateDataPackages4']; ?></td>
 						<td><?php echo $_SESSION['updateDataPackages3']; ?></td>
-						<td>0
-						
-						</th>
-						<td><?php echo ($_SESSION['updateDataPackages1'] + $_SESSION['updateDataPackages2'] + $_SESSION['updateDataPackages3'] + $_SESSION['updateDataPackages4']); ?>
+						<td><?php echo $_SESSION['totalUpdateDataPackageAYearAgo']; ?></td>						
+						<td><?php echo ($_SESSION['updateDataPackages1'] + $_SESSION['updateDataPackages2'] + $_SESSION['updateDataPackages3'] + $_SESSION['updateDataPackages4']); ?>						
 						</th>
 					</tr>
 				</table>
@@ -322,7 +344,6 @@ function determineFourQuarters() {
 					<?php } ?>
 				</table>
 			</div>
-
 		<?php
 		}
 		
@@ -342,8 +363,6 @@ function determineFourQuarters() {
 			unset ( $_SESSION ['recentlyCreatedDataPackages'] );			
 			session_destroy ();
 		}
-		
-		
 		?>
 		</div>
 	</div>
@@ -399,8 +418,6 @@ function determineFourQuarters() {
           var chart = new google.visualization.ColumnChart(document.getElementById('chart_div_dataPackagesDownloads'));
           chart.draw(data, options);
       }
-    
-
 
 
 </script>
@@ -419,8 +436,6 @@ function determineFourQuarters() {
 		
 	});
 </script>
-
-
 
 
 </body>
