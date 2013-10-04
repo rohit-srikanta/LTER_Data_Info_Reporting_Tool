@@ -9,30 +9,30 @@ function updateTotalDataPackagesInputData($beginDate, $endDate) {
 	$url = $pastaURL . "audit/report/?serviceMethod=updateDataPackage&status=200&fromTime=" . $beginDate . "&toTime=" . $endDate;
 	callAuditReportTool( $url, $_POST ['username'], $_POST ['password'], "updateDataPackages");
 }
-function createTotalDataPackagesOutput($xmlData, $quarter) {
+function createTotalDataPackagesOutput($xmlData, $quarter,$deleteCount) {
 	$responseXML = new SimpleXMLElement( $xmlData);
-	$totalRecords = $responseXML->count();
 	
 	require_once('countPackagesInEachQuarter.php');
-	
 	$count = countPackages( $quarter, $responseXML);
 	
-	$_SESSION ['totalDataPackages1'] = $count ['1'];
-	$_SESSION ['totalDataPackages2'] = $count ['1'] + $count ['2'];
-	$_SESSION ['totalDataPackages3'] = $count ['1'] + $count ['2'] + $count ['3'];
-	$_SESSION ['totalDataPackages4'] = $count ['1'] + $count ['2'] + $count ['3'] + $count ['4'];
+	$finalCount['1'] = $count ['1'] - $deleteCount['1'];
+	$finalCount['2'] = $count ['2'] - $deleteCount['2'];
+	$finalCount['3'] = $count ['3'] - $deleteCount['3'];
+	$finalCount['4'] = $count ['4'] - $deleteCount['4'];
 	
-	$_SESSION ['totalDataPackagesCurrentQ'] = $count ['4'];
-	$_SESSION ['totalDataPackagesLastQ'] = $count ['3'];
-	$_SESSION ['totalDataPackagesAyear'] = 0;
-	$_SESSION ['totalDataPackages12Month'] = $count ['1'] + $count ['2'] + $count ['3'] + $count ['4'];
+	$_SESSION ['totalDataPackages1'] = $finalCount['1'];
+	$_SESSION ['totalDataPackages2'] = $finalCount['1'] + $finalCount['2'];
+	$_SESSION ['totalDataPackages3'] = $finalCount['1'] + $finalCount['2'] + $finalCount['3'];
+	$_SESSION ['totalDataPackages4'] = $finalCount['1'] + $finalCount['2'] + $finalCount['3']+ $finalCount['4'];
+	
+	$_SESSION ['totalDataPackagesCurrentQ'] = $finalCount ['4'];
+	$_SESSION ['totalDataPackagesLastQ'] = $finalCount ['3'];
+	$_SESSION ['totalDataPackages12Month'] = $finalCount ['1'] + $finalCount ['2'] + $finalCount ['3'] + $finalCount ['4'];
 }
 function updateDataPackagesOutput($xmlData, $quarter) {
 	$responseXML = new SimpleXMLElement( $xmlData);
-	$totalRecords = $responseXML->count();
 	
 	require_once('countPackagesInEachQuarter.php');
-	
 	$count = countPackages( $quarter, $responseXML);
 	
 	$_SESSION ['updateDataPackages1'] = $count ['1'];
@@ -53,11 +53,14 @@ function countCreateDataPackagesAYearAgo(){
 	global $pastaURL;
 	$url = $pastaURL . "audit/report/?serviceMethod=createDataPackage&status=200&toTime=" . $endDate;
 	$xmlData = returnAuditReportToolOutput( $url, $_POST ['username'], $_POST ['password']);
-	
 	$responseXML = new SimpleXMLElement( $xmlData);
-	$totalRecords = $responseXML->count();
 	
-	$_SESSION ['totalCreateDataPackageAYearAgo'] = $totalRecords;	
+	$url = $pastaURL . "audit/report/?serviceMethod=deleteDataPackage&status=200&toTime=" . $endDate;
+	$xmlData = returnAuditReportToolOutput( $url, $_POST ['username'], $_POST ['password']);
+	
+	$deleteResponseXML = new SimpleXMLElement( $xmlData);
+	
+	$_SESSION ['totalCreateDataPackageAYearAgo'] = countTotalPackages($responseXML) - countTotalPackages($deleteResponseXML);
 }
 
 function countUpdateDataPackagesAYearAgo(){
@@ -69,9 +72,8 @@ function countUpdateDataPackagesAYearAgo(){
 	$xmlData = returnAuditReportToolOutput( $url, $_POST ['username'], $_POST ['password']);
 
 	$responseXML = new SimpleXMLElement( $xmlData);
-	$totalRecords = $responseXML->count();
 
-	$_SESSION ['totalUpdateDataPackageAYearAgo'] = $totalRecords;
+	$_SESSION ['totalUpdateDataPackageAYearAgo'] = countTotalPackages($responseXML);
 }
 
 function countCreateDataPackagesAYearAgoQuarter($quarter){
@@ -101,8 +103,25 @@ function countCreateDataPackagesAYearAgoQuarter($quarter){
 	$xmlData = returnAuditReportToolOutput( $url, $_POST ['username'], $_POST ['password']);
 
 	$responseXML = new SimpleXMLElement( $xmlData);
-	$totalRecords = $responseXML->count();
+	
+	$url = $pastaURL . "audit/report/?serviceMethod=deleteDataPackage&status=200&fromTime=" . $beginDate . "&toTime=" . $endDate;
+	$xmlData = returnAuditReportToolOutput( $url, $_POST ['username'], $_POST ['password']);
+	
+	$deleteResponseXML = new SimpleXMLElement( $xmlData);
 
-	$_SESSION ['totalDataPackagesAyear'] = $totalRecords;
+	$_SESSION ['totalDataPackagesAyear'] = countTotalPackages($responseXML) - countTotalPackages($deleteResponseXML);
+}
+
+function countDeletedPackages($beginDate, $endDate,$quarter){	
+	global $pastaURL;
+	$url = $pastaURL . "audit/report/?serviceMethod=deleteDataPackage&status=200&fromTime=" . $beginDate . "&toTime=" . $endDate;
+	$xmlData = returnAuditReportToolOutput( $url, $_POST ['username'], $_POST ['password']);
+	
+	$responseXML = new SimpleXMLElement( $xmlData);
+	
+	require_once('countPackagesInEachQuarter.php');
+	$deleteCount = countPackages( $quarter, $responseXML);
+	
+	return $deleteCount;
 }
 ?>

@@ -11,10 +11,8 @@ function createDataPackagesArchiveDownloadsInputData($beginDate, $endDate) {
 }
 function createDataPackagesDownloadOutput($xmlData, $quarter) {
 	$responseXML = new SimpleXMLElement ( $xmlData );
-	$totalRecords = $responseXML->count ();
 	
-	require_once ('countPackagesInEachQuarter.php');
-	
+	require_once ('countPackagesInEachQuarter.php');	
 	$count = countPackages ( $quarter, $responseXML );
 	
 	$_SESSION ['dataPackageDownloads1'] = $count ['1'];
@@ -24,10 +22,8 @@ function createDataPackagesDownloadOutput($xmlData, $quarter) {
 }
 function createDataPackagesArchiveDownloadOutput($xmlData, $quarter) {
 	$responseXML = new SimpleXMLElement ( $xmlData );
-	$totalRecords = $responseXML->count ();
-	
-	require_once ('countPackagesInEachQuarter.php');
-	
+
+	require_once ('countPackagesInEachQuarter.php');	
 	$count = countPackages ( $quarter, $responseXML );
 	
 	$_SESSION ['dataPackageArchiveDownloads1'] = $count ['1'];

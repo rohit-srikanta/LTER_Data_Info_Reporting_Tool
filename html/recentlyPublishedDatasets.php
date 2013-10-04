@@ -13,7 +13,11 @@ function recentlyPublishedDataSets($xmlData) {
 	
 	$j = 0;
 	foreach ( $responseXML as $record ) {
-		$recentDataPackages [$j ++] = substr ( $record->resourceId, 38 );
+		
+		if (strpos($record->resourceId, "ecotrends") !== false)
+			continue;
+		
+		$recentDataPackages [$j++] = substr ( $record->resourceId, 38 );
 	}
 	
 	for($i = 0; $i < 10; $i ++) {

@@ -60,9 +60,10 @@ function generateReport() {
 	$quarter = determineFourQuarters();
 	require_once ('totalNumberOfDataPackages.php');
 	createTotalDataPackagesInputData ( $beginDate, $endDate );
-	if (isset ( $_SESSION ['totalDataPackages'] ) && $_SESSION ['totalDataPackages'] != null)
-		createTotalDataPackagesOutput ( $_SESSION ['totalDataPackages'], $quarter );
-
+	if (isset ( $_SESSION ['totalDataPackages'] ) && $_SESSION ['totalDataPackages'] != null){
+		$deleteCount = countDeletedPackages($beginDate, $endDate,$quarter);
+		createTotalDataPackagesOutput ( $_SESSION ['totalDataPackages'], $quarter,$deleteCount);
+	}
 	sleep ( 2 );
 	
 	require_once ('dataPackageDownloads.php');

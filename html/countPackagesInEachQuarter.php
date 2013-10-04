@@ -7,6 +7,10 @@ function countPackages($quarter, $data) {
 	
 	foreach ( $data as $record ) {
 		$month = substr ( $record->entryTime, 5, 2 );
+		
+		if (strpos($record->resourceId, "ecotrends") !== false)
+			continue;
+		
 		if (in_array ( $month, $quarter ['1'] ))
 			$qtr1 = $qtr1 + 1;
 		else if (in_array ( $month, $quarter ['2'] ))
@@ -23,6 +27,19 @@ function countPackages($quarter, $data) {
 	$totalCount ['4'] = $qtr4;
 	
 	return $totalCount;
+}
+
+function countTotalPackages($data){
+	
+	$count = 0;
+	
+	foreach ( $data as $record ) {
+		if (strpos($record->resourceId, "ecotrends") !== false)
+			continue;
+		$count++;
+	}	
+	
+	return $count;
 }
 
 ?>
