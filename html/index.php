@@ -22,65 +22,83 @@
 $pastaURL = "http://pasta.lternet.edu/";
 $errorStatus = "";
 
+//Including the file that has information on how to call LTER Data Portal
 require_once ('curlWebServiceCalls.php');
 
+//Checking if the PHP Post variable submitReport has been set. This variable will be set when the user clicks on Generate LTER Report in the main page.
 if (isset ( $_POST ['submitReport'] )) {
 	
 	global $errorStatus;
 	$errorStatus="";
 	
+	//Calling the starter method to generate report.
 	$reportGenerationStatus = generateReport();
 	
+	//If the user credentials is not correct, exit the report generation without computing the report.
 	if($reportGenerationStatus == "invalidLogin"){
 		global $errorStatus;
 		$errorStatus="invalidLogin";
 	}
+	//If there was any error during reporting, throw the error to the user.
 	if($reportGenerationStatus != "success" && $reportGenerationStatus != "invalidLogin"){
 		global $errorStatus;
 		$errorStatus="reportError";
 	}
+	
+	//unset($_POST['submitReport']);
 }
 
+//The main starter method where we process all the reports in sequence. This method controls all the methods that call PASTA to retrive the necessary information. 
 function generateReport() {
 	session_start ();
 	
 	$username = $_POST ['username'];
 	$password = $_POST ['password'];
 	
+	//Setting the start date to one year ago from current time. 
 	date_default_timezone_set ( 'MST' );
 	$endDate = date ( "Y-m-d" );
-	$beginDate = new DateTime ( date ( DATE_ATOM, mktime ( 0, 0, 0, date ( "m" ), date ( "d" ), date ( "Y" ) - 1 ) ) );
+	$beginDate = new DateTime ( date ( DATE_ATOM, mktime ( 0, 0, 0, date ( "m" )-3, date ( "d" ), date ( "Y" )-1)));
 	$beginDate = $beginDate->format ( "Y-m-d" );
 
-	if (!authenticateUser()) {
+	//If its an authenticated user, then only continue to generate the report.
+	if (!authenticatedUser()) {
 		unset ( $_SESSION ['submitReport'] );
 		return "invalidLogin";
 	}
 	
+	//First compute all the 4 quarters thats necessary to generate the report. 
 	$quarter = determineFourQuarters();
+	
+	//Include the file that is used to compute the total number of packages and compute it
 	require_once ('totalNumberOfDataPackages.php');
 	createTotalDataPackagesInputData ( $beginDate, $endDate );
 	if (isset ( $_SESSION ['totalDataPackages'] ) && $_SESSION ['totalDataPackages'] != null){
 		$deleteCount = countDeletedPackages($beginDate, $endDate,$quarter);
 		createTotalDataPackagesOutput ( $_SESSION ['totalDataPackages'], $quarter,$deleteCount);
 	}
+	//Adding a sleep command as making numerous calls to PASTA in a short interval results in failure to get the information.
 	sleep ( 2 );
 	
+	//Include the file that is used to compute the total number of package downloads and compute it
 	require_once ('dataPackageDownloads.php');
 	createDataPackagesDownloadsInputData ( $beginDate, $endDate );
 	if (isset ( $_SESSION ['dataPackageDownloads'] ) && $_SESSION ['dataPackageDownloads'] != null)
 		createDataPackagesDownloadOutput ( $_SESSION ['dataPackageDownloads'],$quarter);
 	
+	//Include the file that is used to compute the total number of archive package downloads and compute it
 	createDataPackagesArchiveDownloadsInputData ( $beginDate, $endDate );
 	if (isset ( $_SESSION ['dataPackageArchiveDownloads'] ) && $_SESSION ['dataPackageArchiveDownloads'] != null)
 		createDataPackagesArchiveDownloadOutput ( $_SESSION ['dataPackageArchiveDownloads'], $quarter);
-	
+
+	//Include the file that is used to compute the total number of packages that were updated and compute it
 	updateTotalDataPackagesInputData ( $beginDate, $endDate );
 	if (isset ( $_SESSION ['updateDataPackages'] ) && $_SESSION ['updateDataPackages'] != null)
 		updateDataPackagesOutput ( $_SESSION ['updateDataPackages'], $quarter );
 	
 	countDataPackagesForYearAgo($quarter);
 	
+	//Include the file that is used to compute the random list to of packages created in the last three months. 
 	require_once ('recentlyPublishedDatasets.php');
 	recentlyPublishedDataSetsInput ( $endDate );
 	if (isset ( $_SESSION ['recentlyCreatedDataPackages'] ) && $_SESSION ['recentlyCreatedDataPackages'] != null)
@@ -88,9 +106,10 @@ function generateReport() {
 	
 	return "success";
 }
-
+//Method to compute the quarter to which we generate the report. Since we are calculating the report for one year, this report will have exactly 4 quarters
 function determineFourQuarters() {
 	$month = date ( "m" );
+	$month = 12;
 	$monthList = array (
 			'12' => '12',
 			'11' => '11',
@@ -105,6 +124,8 @@ function determineFourQuarters() {
 			'2' => '2',
 			'1' => '1' 
 	);
+	//Creating a cyclic array to pick the 4 quarters. 4th quarter is the latest quarter and we go back 3 months and assign months to that quarter. 
+	//0th quarter is the 4th quarter but a year before it.
 	$key = array_search ( $month, array_keys ( $monthList ) );
 	$month1 = array_slice ( $monthList, $key );
 	$month2 = array_slice ( $monthList, 0, $key );
@@ -119,47 +140,71 @@ function determineFourQuarters() {
 	$quarter ['2'] = array_slice ( $newMonthArray, $currentQuarter + 3, 3 );
 	$quarter ['1'] = array_slice ( $newMonthArray, $currentQuarter + 6, 3 );
 	
+	//The 0th quarter is basically the 4th quarter along with the missing months if any.
+	if($currentQuarter != 0)
+	{
+		$tempArray = array_slice ( $newMonthArray,$currentQuarter + 9, 3 );	
+		$quarter['0'] = array_merge($tempArray,$quarter ['4']);
+	}
+	else{
+		$quarter['0'] = $quarter ['4'];
+	}
+
+	//Quarter names as suffix
 	$quarterNames = array (
-			"1st Quarter",
-			"2nd Quarter",
-			"3rd Quarter",
-			"4th Quarter" 
+			"-1",
+			"-2",
+			"-3",
+			"-4" 
 	);
 	
+	//Based on the value of month in the array, we create the quarter titles
 	if ($month == 12 || $month == 11 || $month == 10) {
-		$quarterTitle ['4'] = $quarterNames [3];
-		$quarterTitle ['3'] = $quarterNames [2];
-		$quarterTitle ['2'] = $quarterNames [1];
-		$quarterTitle ['1'] = $quarterNames [0];
+		$quarterTitle ['4'] = date("Y").$quarterNames [3];
+		$quarterTitle ['3'] = date("Y").$quarterNames [2];
+		$quarterTitle ['2'] = date("Y").$quarterNames [1];
+		$quarterTitle ['1'] = date("Y").$quarterNames [0];
+		$quarterTitle ['0'] = (date("Y")-1).$quarterNames [3];
 	}
 	
 	if ($month == 7 || $month == 8 || $month == 9) {
-		$quarterTitle ['4'] = $quarterNames [2];
-		$quarterTitle ['3'] = $quarterNames [1];
-		$quarterTitle ['2'] = $quarterNames [0];
-		$quarterTitle ['1'] = $quarterNames [3];
+		$quarterTitle ['4'] = date("Y").$quarterNames [2];
+		$quarterTitle ['3'] = date("Y").$quarterNames [1];
+		$quarterTitle ['2'] = date("Y").$quarterNames [0];
+		$quarterTitle ['1'] = date("Y").$quarterNames [3];
+		$quarterTitle ['0'] = (date("Y")-1).$quarterNames [2];
 	}
 	
 	if ($month == 5 || $month == 5 || $month == 6) {
-		$quarterTitle ['4'] = $quarterNames [1];
-		$quarterTitle ['3'] = $quarterNames [0];
-		$quarterTitle ['2'] = $quarterNames [3];
-		$quarterTitle ['1'] = $quarterNames [2];
+		$quarterTitle ['4'] = date("Y").$quarterNames [1];
+		$quarterTitle ['3'] = date("Y").$quarterNames [0];
+		$quarterTitle ['2'] = date("Y").$quarterNames [3];
+		$quarterTitle ['1'] = date("Y").$quarterNames [2];
+		$quarterTitle ['0'] = (date("Y")-1).$quarterNames [1];
 	}
 	
 	if ($month == 1 || $month == 2 || $month == 3) {
-		$quarterTitle ['4'] = $quarterNames [0];
-		$quarterTitle ['3'] = $quarterNames [1];
-		$quarterTitle ['2'] = $quarterNames [2];
-		$quarterTitle ['1'] = $quarterNames [3];
+		$quarterTitle ['4'] = date("Y").$quarterNames [0];
+		$quarterTitle ['3'] = date("Y").$quarterNames [1];
+		$quarterTitle ['2'] = date("Y").$quarterNames [2];
+		$quarterTitle ['1'] = date("Y").$quarterNames [3];
+		$quarterTitle ['0'] = (date("Y")-1).$quarterNames [0];
 	}
 
+	//Creating the custom labels which will be added to the graph and table.
 	$_SESSION ['quarterTitle'] =  $quarterTitle;
+	$_SESSION ['CurrentQuarterDate'] = "From ".$quarter['4'][0]."/01/".date("Y")." to ".$quarter['4'][count($quarter['4'])-1]."/".cal_days_in_month(CAL_GREGORIAN,$quarter['4'][count($quarter['4'])-1],(date("Y")))."/".date("Y");
+	$_SESSION ['PreviousQuarterDate'] = "From ".$quarter['3'][2]."/01/".date("Y")." to ".$quarter['3'][0]."/".cal_days_in_month(CAL_GREGORIAN,$quarter['3'][0],(date("Y")))."/".date("Y");
+	$_SESSION ['AsOfCurrentQuarterDate'] = "As of ".date("m")."/".date("d")."/".date("Y");
+	$_SESSION ['AsOfPreviousQuarterDate'] = "As of ".$quarter['3'][0]."/".cal_days_in_month(CAL_GREGORIAN,$quarter['3'][0],(date("Y")))."/".date("Y");
+	$_SESSION ['AsOfPreviousYearDate'] = "As of ".date("m")."/".date("d")."/".(date("Y")-1);
 	
 	return $quarter;
 }
 
-function authenticateUser() {
+//This method is used to authenticate the user credentials. We make a simple call to fetch all the eml identifier. This will fetch all the identifiers in PASTA. 
+//Since knb-lter-cap has to be present as one of the eml, we check if its present in the response. If so, the user credentials is correct, if not, we throw a error message.
+function authenticatedUser() {
 	global $pastaURL;
 	$url = $pastaURL . "package/eml";
 	$test = returnAuditReportToolOutput ( $url, $_POST ['username'], $_POST ['password'] );
@@ -196,7 +241,10 @@ function authenticateUser() {
 
 	<div class="container">
 		<div class="starter-template">
-			<h1><img src="../assets/ico/LTER.png">&nbsp;&nbsp;Welcome to LTER Network Information System Reporting Tool</h1>
+			<h1>
+				<img src="../assets/ico/LTER.png">&nbsp;&nbsp;Welcome to LTER
+				Network Information System Reporting Tool
+			</h1>
 			<br>
 			<p class="lead">This report describes the current status of the data
 				package inventory as published in the LTER network information
@@ -271,15 +319,14 @@ function authenticateUser() {
 		
 		<?php
 		if ((isset ( $_SESSION ['totalDataPackages4'] )) && (isset ( $_SESSION ['updateDataPackages4'] ))) {
-			
 			?>
 		<div class="starter-template">
 				<p class="lead">Network Summary Statistics</p>
 				<table class="table table-striped table-bordered">
 					<tr>
 						<th></th>
-						<th>Current Period</th>
-						<th>Last Period</th>
+						<th><?php echo $_SESSION['CurrentQuarterDate']; ?></th>
+						<th><?php echo $_SESSION['PreviousQuarterDate']; ?></th>
 						<th>A year Ago</th>
 						<th>Last 12 Months</th>
 					</tr>
@@ -291,21 +338,26 @@ function authenticateUser() {
 						<td><?php echo $_SESSION['totalDataPackages12Month']; ?></td>
 					</tr>
 					<tr>
-						<td>Total number of published data packages
-						
-						</th>
-						<td><?php echo $_SESSION['totalDataPackages4']; ?></td>
-						<td><?php echo $_SESSION['totalDataPackages3']; ?></td>
-						<td><?php echo $_SESSION['totalCreateDataPackageAYearAgo']; ?></td>						
-						<td><?php echo $_SESSION['totalDataPackages4']; ?></td>
-					</tr>
-					<tr>
 						<td>Number of data package updates/revisions</td>
 						<td><?php echo $_SESSION['updateDataPackages4']; ?></td>
 						<td><?php echo $_SESSION['updateDataPackages3']; ?></td>
-						<td><?php echo $_SESSION['totalUpdateDataPackageAYearAgo']; ?></td>						
-						<td><?php echo ($_SESSION['updateDataPackages1'] + $_SESSION['updateDataPackages2'] + $_SESSION['updateDataPackages3'] + $_SESSION['updateDataPackages4']); ?>						
-						</th>
+						<td><?php echo $_SESSION['totalUpdateDataPackageAYearAgo']; ?></td>
+						<td><?php echo ($_SESSION['updateDataPackages1'] + $_SESSION['updateDataPackages2'] + $_SESSION['updateDataPackages3'] + $_SESSION['updateDataPackages4']); ?></td>
+					</tr>
+				</table>
+
+				<table class="table table-striped table-bordered">
+					<tr>
+						<th></th>
+						<th>Current Quarter - <?php echo $_SESSION['AsOfCurrentQuarterDate']; ?></th>
+						<th>Previous Quarter - <?php echo $_SESSION['AsOfPreviousQuarterDate']; ?></th>
+						<th>A year ago - <?php echo $_SESSION['AsOfPreviousYearDate']; ?></th>
+					</tr>
+					<tr>
+						<td>Total number of published data packages</td>
+						<td><?php echo $_SESSION['totalDataPackages4']; ?></td>
+						<td><?php echo $_SESSION['totalDataPackages3']; ?></td>
+						<td><?php echo $_SESSION['totalCreateDataPackageAYearAgo']; ?></td>
 					</tr>
 				</table>
 			</div>
@@ -362,7 +414,6 @@ function authenticateUser() {
 		
 		if (isset ( $_SESSION ['recentlyCreatedDataPackages'] )) {
 			unset ( $_SESSION ['recentlyCreatedDataPackages'] );			
-			session_destroy ();
 		}
 		?>
 		</div>
@@ -384,6 +435,7 @@ function authenticateUser() {
       function drawChartTotalDataPackages() {
         var data = google.visualization.arrayToDataTable([
           ['Quarter', 'Total Packages'],         
+          [<?php echo "'".$_SESSION['quarterTitle']['0']."'"; ?>, <?php echo $_SESSION['totalDataPackages0']; ?>],
           [<?php echo "'".$_SESSION['quarterTitle']['1']."'"; ?>, <?php echo $_SESSION['totalDataPackages1']; ?>],
           [<?php echo "'".$_SESSION['quarterTitle']['2']."'"; ?>, <?php echo $_SESSION['totalDataPackages2']; ?>],
           [<?php echo "'".$_SESSION['quarterTitle']['3']."'"; ?>, <?php echo $_SESSION['totalDataPackages3']; ?>],
@@ -393,7 +445,9 @@ function authenticateUser() {
         var options = {
           title: 'LTER Network Data Packages',
           hAxis: {title: 'Quarter Reporting Period'},
-          vAxis: {title: "Total Data Packages"}
+          vAxis: {title: "Total Data Packages"},
+          colors: ['#F87431'],
+          is3D:true
         };
 
         var chart = new google.visualization.ColumnChart(document.getElementById('chart_div_totalDataPackages'));
@@ -403,6 +457,7 @@ function authenticateUser() {
       function drawChartDataPackageDownloads() {
           var data = google.visualization.arrayToDataTable([ 
             ['Quarter', 'Number of Data Downloads', 'Number of Data Archive Downloads'],      
+            [<?php echo "'".$_SESSION['quarterTitle']['0']."'"; ?>, <?php echo $_SESSION['dataPackageDownloads0']; ?>,  <?php echo $_SESSION['dataPackageArchiveDownloads0']; ?>],
             [<?php echo "'".$_SESSION['quarterTitle']['1']."'"; ?>, <?php echo $_SESSION['dataPackageDownloads1']; ?>,  <?php echo $_SESSION['dataPackageArchiveDownloads1']; ?>],
             [<?php echo "'".$_SESSION['quarterTitle']['2']."'"; ?>, <?php echo $_SESSION['dataPackageDownloads2']; ?>,  <?php echo $_SESSION['dataPackageArchiveDownloads2']; ?>],
             [<?php echo "'".$_SESSION['quarterTitle']['3']."'"; ?>, <?php echo $_SESSION['dataPackageDownloads3']; ?>,  <?php echo $_SESSION['dataPackageArchiveDownloads3']; ?>],
@@ -413,7 +468,8 @@ function authenticateUser() {
             title: 'Number of Network Downloads',
             isStacked: true,
             hAxis: {title: 'Quarter Reporting Period'},
-            vAxis: {title: "Number of Downloads"}
+            vAxis: {title: "Number of Downloads"},
+            colors: ['#F87431','red']
           };
 
           var chart = new google.visualization.ColumnChart(document.getElementById('chart_div_dataPackagesDownloads'));

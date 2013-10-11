@@ -1,4 +1,5 @@
 <?php
+//This method is used to create the request to fetch the createDataPackage details. This service is called to get all the details of the data pacakges created in the last 3 months.
 function recentlyPublishedDataSetsInput($endDate) {
 	global $pastaURL;
 	$newBeginDate = new DateTime ( date ( DATE_ATOM, mktime ( 0, 0, 0, date ( "m" ) - 3, date ( "d" ), date ( "Y" ) ) ) );
@@ -6,10 +7,10 @@ function recentlyPublishedDataSetsInput($endDate) {
 	$url = $pastaURL . "audit/report/?serviceMethod=createDataPackage&status=200&fromTime=" . $newBeginDate . "&toTime=" . $endDate;
 	callAuditReportTool ( $url, $_POST ['username'], $_POST ['password'], "recentlyCreatedDataPackages" );
 }
+//Once we have the data that we want, we then randomly pick 10 data packages from the list. With these data packages, we retrieve the package metadata and populate the last table.
 function recentlyPublishedDataSets($xmlData) {
 	global $pastaURL;
 	$responseXML = new SimpleXMLElement ( $xmlData );
-	$totalRecords = $responseXML->count ();
 	
 	$j = 0;
 	foreach ( $responseXML as $record ) {
@@ -21,7 +22,7 @@ function recentlyPublishedDataSets($xmlData) {
 	}
 	
 	for($i = 0; $i < 10; $i ++) {
-		$randomNumbers [$i] = mt_rand ( 0, $totalRecords );
+		$randomNumbers [$i] = mt_rand ( 0, count($recentDataPackages));
 	}
 	sort ( $randomNumbers );
 	
