@@ -2,8 +2,9 @@
 //This method is used to create the request to fetch the createDataPackage details. This service is called to get all the details of the data pacakges created in the last 3 months.
 function recentlyPublishedDataSetsInput($endDate) {
 	global $pastaURL;
-	$newBeginDate = new DateTime ( date ( DATE_ATOM, mktime ( 0, 0, 0, date ( "m" ) - 3, date ( "d" ), date ( "Y" ) ) ) );
-	$newBeginDate = $newBeginDate->format ( "Y-m-d" );
+	
+	$month = (substr($endDate,5,2))-3;
+	$newBeginDate =date("Y")."-".$month."-".date("d") ;
 	$url = $pastaURL . "audit/report/?serviceMethod=createDataPackage&status=200&fromTime=" . $newBeginDate . "&toTime=" . $endDate;
 	callAuditReportTool ( $url, $_POST ['username'], $_POST ['password'], "recentlyCreatedDataPackages" );
 }

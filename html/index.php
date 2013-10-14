@@ -44,8 +44,6 @@ if (isset ( $_POST ['submitReport'] )) {
 		global $errorStatus;
 		$errorStatus="reportError";
 	}
-	
-	//unset($_POST['submitReport']);
 }
 
 //The main starter method where we process all the reports in sequence. This method controls all the methods that call PASTA to retrive the necessary information. 
@@ -54,21 +52,36 @@ function generateReport() {
 	
 	$username = $_POST ['username'];
 	$password = $_POST ['password'];
+	$endDate = NULL;
+	$beginDate = NULL;
 	
 	//Setting the start date to one year ago from current time. 
 	date_default_timezone_set ( 'MST' );
-	$endDate = date ( "Y-m-d" );
-	$beginDate = new DateTime ( date ( DATE_ATOM, mktime ( 0, 0, 0, date ( "m" )-3, date ( "d" ), date ( "Y" )-1)));
-	$beginDate = $beginDate->format ( "Y-m-d" );
-
+	
+	if ($_POST ['quarter'] === 'current') {
+		$endDate = date ( "Y-m-d" );
+		$beginDate = new DateTime ( date ( DATE_ATOM, mktime ( 0, 0, 0, date ( "m" ) - 3, 01, date ( "Y" ) - 1 ) ) );
+		$beginDate = $beginDate->format ( "Y-m-d" );
+	}
+	else {
+		
+		$currentmonth = date ( "m" );
+		$endMonth = $currentmonth - ($currentmonth % 3 == 0 ? 3 : $currentmonth % 3);
+		$endDate = new DateTime ( date ( DATE_ATOM, mktime ( 0, 0, 0, $endMonth, cal_days_in_month(CAL_GREGORIAN, $endMonth,(date("Y"))), date ("Y") ) ) );
+		$endDate =  $endDate->format ( "Y-m-d" );
+		$beginDate = new DateTime ( date ( DATE_ATOM, mktime ( 0, 0, 0, $endMonth - 3, 01, date ( "Y" ) - 1 ) ) );
+		$beginDate = $beginDate->format ( "Y-m-d" );
+	}
+	
 	//If its an authenticated user, then only continue to generate the report.
 	if (!authenticatedUser()) {
 		unset ( $_SESSION ['submitReport'] );
 		return "invalidLogin";
 	}
+
+	$quarter = determineFourQuarters(substr($endDate,5,2),$_POST ['quarter']);
 	
 	//First compute all the 4 quarters thats necessary to generate the report. 
-	$quarter = determineFourQuarters();
 	
 	//Include the file that is used to compute the total number of packages and compute it
 	require_once ('totalNumberOfDataPackages.php');
@@ -96,7 +109,7 @@ function generateReport() {
 	if (isset ( $_SESSION ['updateDataPackages'] ) && $_SESSION ['updateDataPackages'] != null)
 		updateDataPackagesOutput ( $_SESSION ['updateDataPackages'], $quarter );
 	
-	countDataPackagesForYearAgo($quarter);
+	countDataPackagesForYearAgo($quarter,$endDate);
 	
 	//Include the file that is used to compute the random list to of packages created in the last three months. 
 	require_once ('recentlyPublishedDatasets.php');
@@ -107,9 +120,7 @@ function generateReport() {
 	return "success";
 }
 //Method to compute the quarter to which we generate the report. Since we are calculating the report for one year, this report will have exactly 4 quarters
-function determineFourQuarters() {
-	$month = date ( "m" );
-	$month = 12;
+function determineFourQuarters($month) {
 	$monthList = array (
 			'12' => '12',
 			'11' => '11',
@@ -171,29 +182,34 @@ function determineFourQuarters() {
 		$quarterTitle ['4'] = date("Y").$quarterNames [2];
 		$quarterTitle ['3'] = date("Y").$quarterNames [1];
 		$quarterTitle ['2'] = date("Y").$quarterNames [0];
-		$quarterTitle ['1'] = date("Y").$quarterNames [3];
+		$quarterTitle ['1'] = (date("Y")-1).$quarterNames [3];
 		$quarterTitle ['0'] = (date("Y")-1).$quarterNames [2];
 	}
 	
 	if ($month == 5 || $month == 5 || $month == 6) {
 		$quarterTitle ['4'] = date("Y").$quarterNames [1];
 		$quarterTitle ['3'] = date("Y").$quarterNames [0];
-		$quarterTitle ['2'] = date("Y").$quarterNames [3];
-		$quarterTitle ['1'] = date("Y").$quarterNames [2];
+		$quarterTitle ['2'] = (date("Y")-1).$quarterNames [3];
+		$quarterTitle ['1'] = (date("Y")-1).$quarterNames [2];
 		$quarterTitle ['0'] = (date("Y")-1).$quarterNames [1];
 	}
 	
 	if ($month == 1 || $month == 2 || $month == 3) {
 		$quarterTitle ['4'] = date("Y").$quarterNames [0];
-		$quarterTitle ['3'] = date("Y").$quarterNames [1];
-		$quarterTitle ['2'] = date("Y").$quarterNames [2];
-		$quarterTitle ['1'] = date("Y").$quarterNames [3];
+		$quarterTitle ['3'] = (date("Y")-1).$quarterNames [1];
+		$quarterTitle ['2'] = (date("Y")-1).$quarterNames [2];
+		$quarterTitle ['1'] = (date("Y")-1).$quarterNames [3];
 		$quarterTitle ['0'] = (date("Y")-1).$quarterNames [0];
 	}
 
 	//Creating the custom labels which will be added to the graph and table.
 	$_SESSION ['quarterTitle'] =  $quarterTitle;
-	$_SESSION ['CurrentQuarterDate'] = "From ".$quarter['4'][0]."/01/".date("Y")." to ".$quarter['4'][count($quarter['4'])-1]."/".cal_days_in_month(CAL_GREGORIAN,$quarter['4'][count($quarter['4'])-1],(date("Y")))."/".date("Y");
+	
+	if ($_POST ['quarter'] === 'current') 
+		$_SESSION ['CurrentQuarterDate'] = "From ".$quarter['4'][count($quarter['4'])-1]."/01/".date("Y")." to ".$quarter['4'][0]."/".(date("d"))."/".date("Y");
+	else
+	$_SESSION ['CurrentQuarterDate'] = "From ".$quarter['4'][2]."/01/".date("Y")." to ".$quarter['4'][0]."/".cal_days_in_month(CAL_GREGORIAN,$quarter['4'][count($quarter['4'])-1],(date("Y")))."/".date("Y");
+	
 	$_SESSION ['PreviousQuarterDate'] = "From ".$quarter['3'][2]."/01/".date("Y")." to ".$quarter['3'][0]."/".cal_days_in_month(CAL_GREGORIAN,$quarter['3'][0],(date("Y")))."/".date("Y");
 	$_SESSION ['AsOfCurrentQuarterDate'] = "As of ".date("m")."/".date("d")."/".date("Y");
 	$_SESSION ['AsOfPreviousQuarterDate'] = "As of ".$quarter['3'][0]."/".cal_days_in_month(CAL_GREGORIAN,$quarter['3'][0],(date("Y")))."/".date("Y");
@@ -231,7 +247,7 @@ function authenticatedUser() {
 			<div class="collapse navbar-collapse">
 				<ul class="nav navbar-nav">
 					<li class="active"><a href="index.php">Home</a></li>
-					<li><a href="aboutPage.html">About</a></li>
+					<li><a href="aboutLTER.html">About</a></li>
 					<li><a href="contact.html">Contact</a></li>
 				</ul>
 			</div>
@@ -282,6 +298,11 @@ function authenticatedUser() {
 					class="form-control" placeholder="Username" autofocus> <input
 					id="password" name="password" type="password" class="form-control"
 					placeholder="Password">
+				<p>
+					Generate LTER Network Report : <br> <input type="radio" name="quarter"
+						checked value="current">&nbsp;Including Current Quarter<br> <input type="radio"
+						name="quarter" value="previous">&nbsp;Excluding Current Quarter<br>
+				</p>
 				<button class="btn btn-lg btn-primary btn-block" type="submit"
 					name="submitReport">Generate LTER Network Information System Report</button>
 			</form>

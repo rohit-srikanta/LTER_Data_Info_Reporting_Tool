@@ -52,21 +52,21 @@ function updateDataPackagesOutput($xmlData, $quarter) {
 }
 
 //This method is used to populate the network statistics table. This method is a handler class to all the necessary data. 
-function countDataPackagesForYearAgo($quarter){
-	countCreateDataPackagesAYearAgo();
-	countUpdateDataPackagesAYearAgo();
+function countDataPackagesForYearAgo($quarter,$endDate){
+	countCreateDataPackagesAYearAgo($endDate);
+	countUpdateDataPackagesAYearAgoQuarter($quarter);
 	countCreateDataPackagesAYearAgoQuarter($quarter);
 }
-function countCreateDataPackagesAYearAgo(){
-	$endDate = new DateTime( date( DATE_ATOM, mktime( 0, 0, 0, date( "m"), date( "d"), date( "Y") - 1)));
-	$endDate = $endDate->format( "Y-m-d");
+function countCreateDataPackagesAYearAgo($endDate){
+	$month = (substr($endDate,5,2));
+	$newEndDate = (date("Y") -1)."-".$month."-".(cal_days_in_month(CAL_GREGORIAN, $month,(date("Y")-1)));
 	
 	global $pastaURL;
-	$url = $pastaURL . "audit/report/?serviceMethod=createDataPackage&status=200&toTime=" . $endDate;
+	$url = $pastaURL . "audit/report/?serviceMethod=createDataPackage&status=200&toTime=" . $newEndDate;
 	$xmlData = returnAuditReportToolOutput( $url, $_POST ['username'], $_POST ['password']);
 	$responseXML = new SimpleXMLElement( $xmlData);
 	
-	$url = $pastaURL . "audit/report/?serviceMethod=deleteDataPackage&status=200&toTime=" . $endDate;
+	$url = $pastaURL . "audit/report/?serviceMethod=deleteDataPackage&status=200&toTime=" . $newEndDate;
 	$xmlData = returnAuditReportToolOutput( $url, $_POST ['username'], $_POST ['password']);
 	
 	$deleteResponseXML = new SimpleXMLElement( $xmlData);
@@ -74,33 +74,31 @@ function countCreateDataPackagesAYearAgo(){
 	$_SESSION ['totalCreateDataPackageAYearAgo'] = countTotalPackages($responseXML) - countTotalPackages($deleteResponseXML);
 }
 
-function countUpdateDataPackagesAYearAgo(){
-	$endDate = new DateTime( date( DATE_ATOM, mktime( 0, 0, 0, date( "m"), date( "d"), date( "Y") - 1)));
-	$endDate = $endDate->format( "Y-m-d");
-
+function countUpdateDataPackagesAYearAgoQuarter($quarter){
+	
 	if(strpos($_SESSION ['quarterTitle']['4'],"-4")!== FALSE){
 		$endDate =(date("Y")-1)."-12-".cal_days_in_month(CAL_GREGORIAN, 12,(date("Y")-1));
 		$beginDate =(date("Y")-1)."-10-01";
 	}
 	
 	if(strpos($_SESSION ['quarterTitle']['4'],"-3")!== FALSE){
-		$endDate =(date("Y")-1)."-09-".cal_days_in_month(CAL_GREGORIAN, 09,(date("Y")-1));
+		$endDate =(date("Y")-1)."-09-".cal_days_in_month(CAL_GREGORIAN, 9,(date("Y")-1));
 		$beginDate =(date("Y")-1)."-07-01";
 	}
 	
 	if(strpos($_SESSION ['quarterTitle']['4'],"-2")!== FALSE){
-		$endDate =(date("Y")-1)."-06-".cal_days_in_month(CAL_GREGORIAN, 06,(date("Y")-1));
+		$endDate =(date("Y")-1)."-06-".cal_days_in_month(CAL_GREGORIAN, 6,(date("Y")-1));
 		$beginDate =(date("Y")-1)."-04-01";
 	}
 	
 	if(strpos($_SESSION ['quarterTitle']['4'],"-1")!== FALSE){
-		$endDate =(date("Y")-1)."-03-".cal_days_in_month(CAL_GREGORIAN, 03,(date("Y")-1));
+		$endDate =(date("Y")-1)."-03-".cal_days_in_month(CAL_GREGORIAN, 3,(date("Y")-1));
 		$beginDate =(date("Y")-1)."-01-01";
 	}
 	
 	global $pastaURL;
 	
-	$url = $pastaURL . "audit/report/?serviceMethod=updateDataPackage&status=200&toTime=" . $endDate;
+	$url = $pastaURL . "audit/report/?serviceMethod=updateDataPackage&status=200&toTime=" . $beginDate . "&toTime=" . $endDate;
 	$xmlData = returnAuditReportToolOutput( $url, $_POST ['username'], $_POST ['password']);
 
 	$responseXML = new SimpleXMLElement( $xmlData);
@@ -116,20 +114,20 @@ function countCreateDataPackagesAYearAgoQuarter($quarter){
 	}
 	
 	if(strpos($_SESSION ['quarterTitle']['4'],"-3")!== FALSE){
-		$endDate =(date("Y")-1)."-09-".cal_days_in_month(CAL_GREGORIAN, 09,(date("Y")-1));
+		$endDate =(date("Y")-1)."-09-".cal_days_in_month(CAL_GREGORIAN, 9,(date("Y")-1));
 		$beginDate =(date("Y")-1)."-07-01";
 	}
 	
 	if(strpos($_SESSION ['quarterTitle']['4'],"-2")!== FALSE){
-		$endDate =(date("Y")-1)."-06-".cal_days_in_month(CAL_GREGORIAN, 06,(date("Y")-1));
+		$endDate =(date("Y")-1)."-06-".cal_days_in_month(CAL_GREGORIAN, 6,(date("Y")-1));
 		$beginDate =(date("Y")-1)."-04-01";
 	}
 	
 	if(strpos($_SESSION ['quarterTitle']['4'],"-1")!== FALSE){
-		$endDate =(date("Y")-1)."-03-".cal_days_in_month(CAL_GREGORIAN, 03,(date("Y")-1));
+		$endDate =(date("Y")-1)."-03-".cal_days_in_month(CAL_GREGORIAN, 3,(date("Y")-1));
 		$beginDate =(date("Y")-1)."-01-01";
 	}
-	
+
 	global $pastaURL;
 	$url = $pastaURL . "audit/report/?serviceMethod=createDataPackage&status=200&fromTime=" . $beginDate . "&toTime=" . $endDate;
 	$xmlData = returnAuditReportToolOutput( $url, $_POST ['username'], $_POST ['password']);
