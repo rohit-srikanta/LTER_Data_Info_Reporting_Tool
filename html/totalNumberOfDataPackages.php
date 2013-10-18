@@ -19,18 +19,16 @@ function createTotalDataPackagesOutput($xmlData, $quarter,$deleteCount) {
 	require_once('countPackagesInEachQuarter.php');
 	$count = countPackages( $quarter, $responseXML);
 	
-	
-	$finalCount['1'] = $count ['1'] - $deleteCount['1'];
-	$finalCount['2'] = $count ['2'] - $deleteCount['2'];
-	$finalCount['3'] = $count ['3'] - $deleteCount['3'];
-	$finalCount['4'] = $count ['4'] - $deleteCount['4'];
-	$finalCount['0'] = $count ['0'] - $deleteCount['0'];
-	
+	for($i= 0 ;$i< 5; $i++){
+		$finalCount[$i] = $count [$i] - $deleteCount[$i];
+	}
+
+	$_SESSION ['totalDataPackages0'] = $finalCount['0'] ;
 	$_SESSION ['totalDataPackages1'] = $finalCount['0'] + $finalCount['1'];
 	$_SESSION ['totalDataPackages2'] = $finalCount['0'] + $finalCount['1'] + $finalCount['2'];
 	$_SESSION ['totalDataPackages3'] = $finalCount['0'] + $finalCount['1'] + $finalCount['2'] + $finalCount['3'];
 	$_SESSION ['totalDataPackages4'] = $finalCount['0'] + $finalCount['1'] + $finalCount['2'] + $finalCount['3']+ $finalCount['4'];
-	$_SESSION ['totalDataPackages0'] = $finalCount['0'] ;
+	
 	
 	$_SESSION ['totalDataPackagesCurrentQ'] = $finalCount ['4'];
 	$_SESSION ['totalDataPackagesLastQ'] = $finalCount ['3'];
@@ -57,6 +55,8 @@ function countDataPackagesForYearAgo($quarter,$endDate){
 	countUpdateDataPackagesAYearAgoQuarter($quarter);
 	countCreateDataPackagesAYearAgoQuarter($quarter);
 }
+//This method is used to count the total number of packages upto a year ago.
+//Since creating also comes with deletion, we count that as well and then displayed the aggregated number 
 function countCreateDataPackagesAYearAgo($endDate){
 	$month = (substr($endDate,5,2));
 	$newEndDate = (date("Y") -1)."-".$month."-".(cal_days_in_month(CAL_GREGORIAN, $month,(date("Y")-1)));
@@ -74,6 +74,7 @@ function countCreateDataPackagesAYearAgo($endDate){
 	$_SESSION ['totalCreateDataPackageAYearAgo'] = countTotalPackages($responseXML) - countTotalPackages($deleteResponseXML);
 }
 
+//Count the total number of update/revisions for the same quarter but a year ago.
 function countUpdateDataPackagesAYearAgoQuarter($quarter){
 	
 	if(strpos($_SESSION ['quarterTitle']['4'],"-4")!== FALSE){
@@ -105,7 +106,7 @@ function countUpdateDataPackagesAYearAgoQuarter($quarter){
 
 	$_SESSION ['totalUpdateDataPackageAYearAgo'] = countTotalPackages($responseXML);
 }
-
+//Count the total number of create and deletes for the same quarter but a year ago.
 function countCreateDataPackagesAYearAgoQuarter($quarter){
 	
 	if(strpos($_SESSION ['quarterTitle']['4'],"-4")!== FALSE){

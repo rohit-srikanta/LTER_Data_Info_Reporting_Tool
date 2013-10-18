@@ -1,5 +1,6 @@
 <?php 
 
+//This method is used to make curl calls to PASTA to fetch the information. This method sets the returned value into a session variable.
 function callAuditReportTool($url, $username, $password, $returnValue) {
 	$curl = curl_init ();
 	// Optional Authentication:
@@ -16,6 +17,7 @@ function callAuditReportTool($url, $username, $password, $returnValue) {
 	curl_close ( $curl );
 	$_SESSION [$returnValue] = $retValue;
 }
+//This method is used to just return the reponse that PASTA provides.
 function returnAuditReportToolOutput($url, $username, $password) {
 	$curl = curl_init ();
 	// Optional Authentication:

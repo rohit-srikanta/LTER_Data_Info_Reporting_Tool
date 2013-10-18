@@ -14,6 +14,7 @@ function recentlyPublishedDataSets($xmlData) {
 	$responseXML = new SimpleXMLElement ( $xmlData );
 	
 	$j = 0;
+	//Store the resource id of all the fetched data packages. If the package id contains ecotrends, ignore that data package.
 	foreach ( $responseXML as $record ) {
 		
 		if (strpos($record->resourceId, "ecotrends") !== false)
@@ -22,11 +23,13 @@ function recentlyPublishedDataSets($xmlData) {
 		$recentDataPackages [$j++] = substr ( $record->resourceId, 38 );
 	}
 	
+	//Randomly pick 10 data packages that will be shown on the webpage
 	for($i = 0; $i < 10; $i ++) {
 		$randomNumbers [$i] = mt_rand ( 0, count($recentDataPackages));
 	}
 	sort ( $randomNumbers );
 	
+	//For every randomly picked data package, retrieve the metadata that contains information such as author, date and title
 	for($i = 0; $i < 10; $i ++) {
 		$url = $pastaURL . "package/metadata/eml/" . $recentDataPackages [$randomNumbers [$i]];
 		$returnvalue = returnAuditReportToolOutput ( $url, $_POST ['username'], $_POST ['password'] );
@@ -55,6 +58,7 @@ function recentlyPublishedDataSets($xmlData) {
 				$authorName = $authorName . $tempName;
 			}
 		}
+		//Format the output to get a user friendly output
 		$scope = strstr ( $recentDataPackages [$randomNumbers [$i]], '/', true );
 		$identifier = strstr ( $recentDataPackages [$randomNumbers [$i]], '/' );
 		$identifier = strstr ( substr ( $identifier, 1 ), '/', true );

@@ -58,13 +58,14 @@ function generateReport() {
 	//Setting the start date to one year ago from current time. 
 	date_default_timezone_set ( 'MST' );
 	
+	//If the user has choosen include current quarter, then include the data until present date
 	if ($_POST ['quarter'] === 'current') {
 		$endDate = date ( "Y-m-d" );
 		$beginDate = new DateTime ( date ( DATE_ATOM, mktime ( 0, 0, 0, date ( "m" ) - 3, 01, date ( "Y" ) - 1 ) ) );
 		$beginDate = $beginDate->format ( "Y-m-d" );
 	}
-	else {
-		
+	//If the report has to be generated until previous quarter, find the previous quarter date and make webs services calls with that date.
+	else {		
 		$currentmonth = date ( "m" );
 		$endMonth = $currentmonth - ($currentmonth % 3 == 0 ? 3 : $currentmonth % 3);
 		$endDate = new DateTime ( date ( DATE_ATOM, mktime ( 0, 0, 0, $endMonth, cal_days_in_month(CAL_GREGORIAN, $endMonth,(date("Y"))), date ("Y") ) ) );
@@ -116,7 +117,6 @@ function generateReport() {
 	recentlyPublishedDataSetsInput ( $endDate );
 	if (isset ( $_SESSION ['recentlyCreatedDataPackages'] ) && $_SESSION ['recentlyCreatedDataPackages'] != null)
 		recentlyPublishedDataSets ( $_SESSION ['recentlyCreatedDataPackages'] );
-	
 	return "success";
 }
 //Method to compute the quarter to which we generate the report. Since we are calculating the report for one year, this report will have exactly 4 quarters
@@ -270,7 +270,6 @@ function authenticatedUser() {
 				program officers, and other interested parties</p>
 			<hr>
 		</div>
-
 		<div class="col-md-12">	
 		
 		 <?php global $errorStatus;
@@ -299,9 +298,10 @@ function authenticatedUser() {
 					id="password" name="password" type="password" class="form-control"
 					placeholder="Password">
 				<p>
-					Generate LTER Network Report : <br> <input type="radio" name="quarter"
-						checked value="current">&nbsp;Including Current Quarter<br> <input type="radio"
-						name="quarter" value="previous">&nbsp;Excluding Current Quarter<br>
+					Generate LTER Network Report : <br> <input type="radio"
+						name="quarter" checked value="current">&nbsp;Including Current
+					Quarter<br> <input type="radio" name="quarter" value="previous">&nbsp;Excluding
+					Current Quarter<br>
 				</p>
 				<button class="btn btn-lg btn-primary btn-block" type="submit"
 					name="submitReport">Generate LTER Network Information System Report</button>
@@ -323,7 +323,10 @@ function authenticatedUser() {
 					total by quarter.</p>
 			</div>
 			<div id="chart_div_totalDataPackages"
-				style="width: 1000px; height: 400px;"></div><?php
+				style="width: 1000px; height: 400px;">				
+				</div>				
+				<button type="button" class="btn btn-primary" onclick="saveAsImg(document.getElementById('chart_div_totalDataPackages'));">Save the chart as Image File</button>
+				<?php
 		}
 		
 		if (isset ( $_SESSION ['dataPackageDownloads4'] )) {
@@ -334,7 +337,9 @@ function authenticatedUser() {
 					the LTER network information system by quarter.</p>
 			</div>
 			<div id="chart_div_dataPackagesDownloads"
-				style="width: 1000px; height: 400px;"></div><?php
+				style="width: 1000px; height: 400px;"></div>
+			<button type="button" class="btn btn-primary" onclick="saveAsImg(document.getElementById('chart_div_dataPackagesDownloads'));">Save the chart as Image File</button>	
+			<?php
 		}
 		?>
 		
@@ -418,6 +423,8 @@ function authenticatedUser() {
 					<?php } ?>
 				</table>
 			</div>
+			
+			
 		<?php
 		}
 		
@@ -448,6 +455,9 @@ function authenticatedUser() {
 	<script src="../dist/js/bootstrap.min.js"></script>
 
 	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+	<script type="text/javascript" src="http://canvg.googlecode.com/svn/trunk/canvg.js"></script> 
+	<script type="text/javascript" src="http://canvg.googlecode.com/svn/trunk/rgbcolor.js"></script> 
+	<script type="text/javascript" src="http://canvg.googlecode.com/svn/trunk/StackBlur.js"></script>
 	<script type="text/javascript">
       google.load("visualization", "1", {packages:["corechart"]});
       google.setOnLoadCallback(drawChartTotalDataPackages);
@@ -496,8 +506,6 @@ function authenticatedUser() {
           var chart = new google.visualization.ColumnChart(document.getElementById('chart_div_dataPackagesDownloads'));
           chart.draw(data, options);
       }
-
-
 </script>
 	<script language="JavaScript">
 	$(document).ready(function() {
@@ -515,6 +523,33 @@ function authenticatedUser() {
 	});
 </script>
 
+	<script type="text/javascript">
 
+    function getImgData(chartContainer) {
+        var chartArea = chartContainer.getElementsByTagName('svg')[0].parentNode;
+        var svg = chartArea.innerHTML;
+        var doc = chartContainer.ownerDocument;
+        var canvas = doc.createElement('canvas');        
+        canvas.setAttribute('width', chartArea.offsetWidth);
+        canvas.setAttribute('height', chartArea.offsetHeight);
+        
+        canvas.setAttribute(
+            'style',
+            'position: absolute; ' +
+            'top: ' + (-chartArea.offsetHeight * 2) + 'px;' +
+            'left: ' + (-chartArea.offsetWidth * 2) + 'px;');
+        doc.body.appendChild(canvas);
+        canvg(canvas, svg);
+        var imgData = canvas.toDataURL('image/png');
+        canvas.parentNode.removeChild(canvas);
+        return imgData;
+      }
+      
+      function saveAsImg(chartContainer) {
+          
+    	var imgData = getImgData(chartContainer);
+        window.location = imgData.replace('image/png', 'image/octet-stream');
+      }
+	</script>
 </body>
 </html>
