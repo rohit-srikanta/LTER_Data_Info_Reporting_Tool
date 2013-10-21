@@ -18,35 +18,35 @@
 </head>
 <?php
 
-//Global declaration of the pasta URL so that if we have to make a change, it can be done in one place.
+// Global declaration of the pasta URL so that if we have to make a change, it can be done in one place.
 $pastaURL = "http://pasta.lternet.edu/";
 $errorStatus = "";
 
-//Including the file that has information on how to call LTER Data Portal
+// Including the file that has information on how to call LTER Data Portal
 require_once ('curlWebServiceCalls.php');
 
-//Checking if the PHP Post variable submitReport has been set. This variable will be set when the user clicks on Generate LTER Report in the main page.
+// Checking if the PHP Post variable submitReport has been set. This variable will be set when the user clicks on Generate LTER Report in the main page.
 if (isset ( $_POST ['submitReport'] )) {
 	
 	global $errorStatus;
-	$errorStatus="";
+	$errorStatus = "";
 	
-	//Calling the starter method to generate report.
-	$reportGenerationStatus = generateReport();
+	// Calling the starter method to generate report.
+	$reportGenerationStatus = generateReport ();
 	
-	//If the user credentials is not correct, exit the report generation without computing the report.
-	if($reportGenerationStatus == "invalidLogin"){
+	// If the user credentials is not correct, exit the report generation without computing the report.
+	if ($reportGenerationStatus == "invalidLogin") {
 		global $errorStatus;
-		$errorStatus="invalidLogin";
+		$errorStatus = "invalidLogin";
 	}
-	//If there was any error during reporting, throw the error to the user.
-	if($reportGenerationStatus != "success" && $reportGenerationStatus != "invalidLogin"){
+	// If there was any error during reporting, throw the error to the user.
+	if ($reportGenerationStatus != "success" && $reportGenerationStatus != "invalidLogin") {
 		global $errorStatus;
-		$errorStatus="reportError";
+		$errorStatus = "reportError";
 	}
 }
 
-//The main starter method where we process all the reports in sequence. This method controls all the methods that call PASTA to retrive the necessary information. 
+// The main starter method where we process all the reports in sequence. This method controls all the methods that call PASTA to retrive the necessary information.
 function generateReport() {
 	session_start ();
 	
@@ -55,71 +55,70 @@ function generateReport() {
 	$endDate = NULL;
 	$beginDate = NULL;
 	
-	//Setting the start date to one year ago from current time. 
+	// Setting the start date to one year ago from current time.
 	date_default_timezone_set ( 'MST' );
 	
-	//If the user has choosen include current quarter, then include the data until present date
+	// If the user has choosen include current quarter, then include the data until present date
 	if ($_POST ['quarter'] === 'current') {
 		$endDate = date ( "Y-m-d" );
 		$beginDate = new DateTime ( date ( DATE_ATOM, mktime ( 0, 0, 0, date ( "m" ) - 3, 01, date ( "Y" ) - 1 ) ) );
 		$beginDate = $beginDate->format ( "Y-m-d" );
-	}
-	//If the report has to be generated until previous quarter, find the previous quarter date and make webs services calls with that date.
-	else {		
+	} 	// If the report has to be generated until previous quarter, find the previous quarter date and make webs services calls with that date.
+	else {
 		$currentmonth = date ( "m" );
 		$endMonth = $currentmonth - ($currentmonth % 3 == 0 ? 3 : $currentmonth % 3);
-		$endDate = new DateTime ( date ( DATE_ATOM, mktime ( 0, 0, 0, $endMonth, cal_days_in_month(CAL_GREGORIAN, $endMonth,(date("Y"))), date ("Y") ) ) );
-		$endDate =  $endDate->format ( "Y-m-d" );
+		$endDate = new DateTime ( date ( DATE_ATOM, mktime ( 0, 0, 0, $endMonth, cal_days_in_month ( CAL_GREGORIAN, $endMonth, (date ( "Y" )) ), date ( "Y" ) ) ) );
+		$endDate = $endDate->format ( "Y-m-d" );
 		$beginDate = new DateTime ( date ( DATE_ATOM, mktime ( 0, 0, 0, $endMonth - 3, 01, date ( "Y" ) - 1 ) ) );
 		$beginDate = $beginDate->format ( "Y-m-d" );
 	}
 	
-	//If its an authenticated user, then only continue to generate the report.
-	if (!authenticatedUser()) {
+	// If its an authenticated user, then only continue to generate the report.
+	if (! authenticatedUser ()) {
 		unset ( $_SESSION ['submitReport'] );
 		return "invalidLogin";
 	}
-
-	$quarter = determineFourQuarters(substr($endDate,5,2),$_POST ['quarter']);
+	deleteFilesInDownloadDir();
+	$quarter = determineFourQuarters ( substr ( $endDate, 5, 2 ), $_POST ['quarter'] );
 	
-	//First compute all the 4 quarters thats necessary to generate the report. 
+	// First compute all the 4 quarters thats necessary to generate the report.
 	
-	//Include the file that is used to compute the total number of packages and compute it
+	// Include the file that is used to compute the total number of packages and compute it
 	require_once ('totalNumberOfDataPackages.php');
 	createTotalDataPackagesInputData ( $beginDate, $endDate );
-	if (isset ( $_SESSION ['totalDataPackages'] ) && $_SESSION ['totalDataPackages'] != null){
-		$deleteCount = countDeletedPackages($beginDate, $endDate,$quarter);
-		createTotalDataPackagesOutput ( $_SESSION ['totalDataPackages'], $quarter,$deleteCount);
+	if (isset ( $_SESSION ['totalDataPackages'] ) && $_SESSION ['totalDataPackages'] != null) {
+		$deleteCount = countDeletedPackages ( $beginDate, $endDate, $quarter );
+		createTotalDataPackagesOutput ( $_SESSION ['totalDataPackages'], $quarter, $deleteCount );
 	}
-	//Adding a sleep command as making numerous calls to PASTA in a short interval results in failure to get the information.
+	// Adding a sleep command as making numerous calls to PASTA in a short interval results in failure to get the information.
 	sleep ( 2 );
 	
-	//Include the file that is used to compute the total number of package downloads and compute it
+	// Include the file that is used to compute the total number of package downloads and compute it
 	require_once ('dataPackageDownloads.php');
 	createDataPackagesDownloadsInputData ( $beginDate, $endDate );
 	if (isset ( $_SESSION ['dataPackageDownloads'] ) && $_SESSION ['dataPackageDownloads'] != null)
-		createDataPackagesDownloadOutput ( $_SESSION ['dataPackageDownloads'],$quarter);
-	
-	//Include the file that is used to compute the total number of archive package downloads and compute it
+		createDataPackagesDownloadOutput ( $_SESSION ['dataPackageDownloads'], $quarter );
+		
+		// Include the file that is used to compute the total number of archive package downloads and compute it
 	createDataPackagesArchiveDownloadsInputData ( $beginDate, $endDate );
 	if (isset ( $_SESSION ['dataPackageArchiveDownloads'] ) && $_SESSION ['dataPackageArchiveDownloads'] != null)
-		createDataPackagesArchiveDownloadOutput ( $_SESSION ['dataPackageArchiveDownloads'], $quarter);
-
-	//Include the file that is used to compute the total number of packages that were updated and compute it
+		createDataPackagesArchiveDownloadOutput ( $_SESSION ['dataPackageArchiveDownloads'], $quarter );
+		
+		// Include the file that is used to compute the total number of packages that were updated and compute it
 	updateTotalDataPackagesInputData ( $beginDate, $endDate );
 	if (isset ( $_SESSION ['updateDataPackages'] ) && $_SESSION ['updateDataPackages'] != null)
 		updateDataPackagesOutput ( $_SESSION ['updateDataPackages'], $quarter );
 	
-	countDataPackagesForYearAgo($quarter,$endDate);
+	countDataPackagesForYearAgo ( $quarter, $endDate );
 	
-	//Include the file that is used to compute the random list to of packages created in the last three months. 
+	// Include the file that is used to compute the random list to of packages created in the last three months.
 	require_once ('recentlyPublishedDatasets.php');
 	recentlyPublishedDataSetsInput ( $endDate );
 	if (isset ( $_SESSION ['recentlyCreatedDataPackages'] ) && $_SESSION ['recentlyCreatedDataPackages'] != null)
 		recentlyPublishedDataSets ( $_SESSION ['recentlyCreatedDataPackages'] );
 	return "success";
 }
-//Method to compute the quarter to which we generate the report. Since we are calculating the report for one year, this report will have exactly 4 quarters
+// Method to compute the quarter to which we generate the report. Since we are calculating the report for one year, this report will have exactly 4 quarters
 function determineFourQuarters($month) {
 	$monthList = array (
 			'12' => '12',
@@ -135,8 +134,8 @@ function determineFourQuarters($month) {
 			'2' => '2',
 			'1' => '1' 
 	);
-	//Creating a cyclic array to pick the 4 quarters. 4th quarter is the latest quarter and we go back 3 months and assign months to that quarter. 
-	//0th quarter is the 4th quarter but a year before it.
+	// Creating a cyclic array to pick the 4 quarters. 4th quarter is the latest quarter and we go back 3 months and assign months to that quarter.
+	// 0th quarter is the 4th quarter but a year before it.
 	$key = array_search ( $month, array_keys ( $monthList ) );
 	$month1 = array_slice ( $monthList, $key );
 	$month2 = array_slice ( $monthList, 0, $key );
@@ -151,17 +150,15 @@ function determineFourQuarters($month) {
 	$quarter ['2'] = array_slice ( $newMonthArray, $currentQuarter + 3, 3 );
 	$quarter ['1'] = array_slice ( $newMonthArray, $currentQuarter + 6, 3 );
 	
-	//The 0th quarter is basically the 4th quarter along with the missing months if any.
-	if($currentQuarter != 0)
-	{
-		$tempArray = array_slice ( $newMonthArray,$currentQuarter + 9, 3 );	
-		$quarter['0'] = array_merge($tempArray,$quarter ['4']);
+	// The 0th quarter is basically the 4th quarter along with the missing months if any.
+	if ($currentQuarter != 0) {
+		$tempArray = array_slice ( $newMonthArray, $currentQuarter + 9, 3 );
+		$quarter ['0'] = array_merge ( $tempArray, $quarter ['4'] );
+	} else {
+		$quarter ['0'] = $quarter ['4'];
 	}
-	else{
-		$quarter['0'] = $quarter ['4'];
-	}
-
-	//Quarter names as suffix
+	
+	// Quarter names as suffix
 	$quarterNames = array (
 			"-1",
 			"-2",
@@ -169,57 +166,67 @@ function determineFourQuarters($month) {
 			"-4" 
 	);
 	
-	//Based on the value of month in the array, we create the quarter titles
+	// Based on the value of month in the array, we create the quarter titles
 	if ($month == 12 || $month == 11 || $month == 10) {
-		$quarterTitle ['4'] = date("Y").$quarterNames [3];
-		$quarterTitle ['3'] = date("Y").$quarterNames [2];
-		$quarterTitle ['2'] = date("Y").$quarterNames [1];
-		$quarterTitle ['1'] = date("Y").$quarterNames [0];
-		$quarterTitle ['0'] = (date("Y")-1).$quarterNames [3];
+		$quarterTitle ['4'] = date ( "Y" ) . $quarterNames [3];
+		$quarterTitle ['3'] = date ( "Y" ) . $quarterNames [2];
+		$quarterTitle ['2'] = date ( "Y" ) . $quarterNames [1];
+		$quarterTitle ['1'] = date ( "Y" ) . $quarterNames [0];
+		$quarterTitle ['0'] = (date ( "Y" ) - 1) . $quarterNames [3];
 	}
 	
 	if ($month == 7 || $month == 8 || $month == 9) {
-		$quarterTitle ['4'] = date("Y").$quarterNames [2];
-		$quarterTitle ['3'] = date("Y").$quarterNames [1];
-		$quarterTitle ['2'] = date("Y").$quarterNames [0];
-		$quarterTitle ['1'] = (date("Y")-1).$quarterNames [3];
-		$quarterTitle ['0'] = (date("Y")-1).$quarterNames [2];
+		$quarterTitle ['4'] = date ( "Y" ) . $quarterNames [2];
+		$quarterTitle ['3'] = date ( "Y" ) . $quarterNames [1];
+		$quarterTitle ['2'] = date ( "Y" ) . $quarterNames [0];
+		$quarterTitle ['1'] = (date ( "Y" ) - 1) . $quarterNames [3];
+		$quarterTitle ['0'] = (date ( "Y" ) - 1) . $quarterNames [2];
 	}
 	
 	if ($month == 5 || $month == 5 || $month == 6) {
-		$quarterTitle ['4'] = date("Y").$quarterNames [1];
-		$quarterTitle ['3'] = date("Y").$quarterNames [0];
-		$quarterTitle ['2'] = (date("Y")-1).$quarterNames [3];
-		$quarterTitle ['1'] = (date("Y")-1).$quarterNames [2];
-		$quarterTitle ['0'] = (date("Y")-1).$quarterNames [1];
+		$quarterTitle ['4'] = date ( "Y" ) . $quarterNames [1];
+		$quarterTitle ['3'] = date ( "Y" ) . $quarterNames [0];
+		$quarterTitle ['2'] = (date ( "Y" ) - 1) . $quarterNames [3];
+		$quarterTitle ['1'] = (date ( "Y" ) - 1) . $quarterNames [2];
+		$quarterTitle ['0'] = (date ( "Y" ) - 1) . $quarterNames [1];
 	}
 	
 	if ($month == 1 || $month == 2 || $month == 3) {
-		$quarterTitle ['4'] = date("Y").$quarterNames [0];
-		$quarterTitle ['3'] = (date("Y")-1).$quarterNames [1];
-		$quarterTitle ['2'] = (date("Y")-1).$quarterNames [2];
-		$quarterTitle ['1'] = (date("Y")-1).$quarterNames [3];
-		$quarterTitle ['0'] = (date("Y")-1).$quarterNames [0];
+		$quarterTitle ['4'] = date ( "Y" ) . $quarterNames [0];
+		$quarterTitle ['3'] = (date ( "Y" ) - 1) . $quarterNames [1];
+		$quarterTitle ['2'] = (date ( "Y" ) - 1) . $quarterNames [2];
+		$quarterTitle ['1'] = (date ( "Y" ) - 1) . $quarterNames [3];
+		$quarterTitle ['0'] = (date ( "Y" ) - 1) . $quarterNames [0];
 	}
-
-	//Creating the custom labels which will be added to the graph and table.
-	$_SESSION ['quarterTitle'] =  $quarterTitle;
 	
-	if ($_POST ['quarter'] === 'current') 
-		$_SESSION ['CurrentQuarterDate'] = "From ".$quarter['4'][count($quarter['4'])-1]."/01/".date("Y")." to ".$quarter['4'][0]."/".(date("d"))."/".date("Y");
+	// Creating the custom labels which will be added to the graph and table.
+	$_SESSION ['quarterTitle'] = $quarterTitle;
+	
+	if ($_POST ['quarter'] === 'current')
+		$_SESSION ['CurrentQuarterDate'] = "From " . $quarter ['4'] [count ( $quarter ['4'] ) - 1] . "/01/" . date ( "Y" ) . " to " . $quarter ['4'] [0] . "/" . (date ( "d" )) . "/" . date ( "Y" );
 	else
-	$_SESSION ['CurrentQuarterDate'] = "From ".$quarter['4'][2]."/01/".date("Y")." to ".$quarter['4'][0]."/".cal_days_in_month(CAL_GREGORIAN,$quarter['4'][count($quarter['4'])-1],(date("Y")))."/".date("Y");
+		$_SESSION ['CurrentQuarterDate'] = "From " . $quarter ['4'] [2] . "/01/" . date ( "Y" ) . " to " . $quarter ['4'] [0] . "/" . cal_days_in_month ( CAL_GREGORIAN, $quarter ['4'] [count ( $quarter ['4'] ) - 1], (date ( "Y" )) ) . "/" . date ( "Y" );
 	
-	$_SESSION ['PreviousQuarterDate'] = "From ".$quarter['3'][2]."/01/".date("Y")." to ".$quarter['3'][0]."/".cal_days_in_month(CAL_GREGORIAN,$quarter['3'][0],(date("Y")))."/".date("Y");
-	$_SESSION ['AsOfCurrentQuarterDate'] = "As of ".date("m")."/".date("d")."/".date("Y");
-	$_SESSION ['AsOfPreviousQuarterDate'] = "As of ".$quarter['3'][0]."/".cal_days_in_month(CAL_GREGORIAN,$quarter['3'][0],(date("Y")))."/".date("Y");
-	$_SESSION ['AsOfPreviousYearDate'] = "As of ".date("m")."/".date("d")."/".(date("Y")-1);
+	$_SESSION ['PreviousQuarterDate'] = "From " . $quarter ['3'] [2] . "/01/" . date ( "Y" ) . " to " . $quarter ['3'] [0] . "/" . cal_days_in_month ( CAL_GREGORIAN, $quarter ['3'] [0], (date ( "Y" )) ) . "/" . date ( "Y" );
+	$_SESSION ['AsOfCurrentQuarterDate'] = "As of " . date ( "m" ) . "/" . date ( "d" ) . "/" . date ( "Y" );
+	$_SESSION ['AsOfPreviousQuarterDate'] = "As of " . $quarter ['3'] [0] . "/" . cal_days_in_month ( CAL_GREGORIAN, $quarter ['3'] [0], (date ( "Y" )) ) . "/" . date ( "Y" );
+	$_SESSION ['AsOfPreviousYearDate'] = "As of " . date ( "m" ) . "/" . date ( "d" ) . "/" . (date ( "Y" ) - 1);
 	
 	return $quarter;
 }
 
-//This method is used to authenticate the user credentials. We make a simple call to fetch all the eml identifier. This will fetch all the identifiers in PASTA. 
-//Since knb-lter-cap has to be present as one of the eml, we check if its present in the response. If so, the user credentials is correct, if not, we throw a error message.
+//Funtion to clear the download directory before report generation
+function deleteFilesInDownloadDir(){
+	
+	$files = glob('../download/*'); // get all file names
+	foreach($files as $file){ // iterate files
+		if(is_file($file))
+			unlink($file); // delete file
+	}
+}
+
+// This method is used to authenticate the user credentials. We make a simple call to fetch all the eml identifier. This will fetch all the identifiers in PASTA.
+// Since knb-lter-cap has to be present as one of the eml, we check if its present in the response. If so, the user credentials is correct, if not, we throw a error message.
 function authenticatedUser() {
 	global $pastaURL;
 	$url = $pastaURL . "package/eml";
@@ -227,9 +234,10 @@ function authenticatedUser() {
 	$pos = strpos ( $test, "knb-lter-cap" );
 	if ($pos === false)
 		return false;
-	else 
+	else
 		return true;
 }
+
 ?>
   <body>
 
@@ -272,17 +280,23 @@ function authenticatedUser() {
 		</div>
 		<div class="col-md-12">	
 		
-		 <?php global $errorStatus;
-		 if ($errorStatus === "reportError") {
-			echo'<script> alert("There was a problem during error generation. Please try again.");
+		 <?php
+			
+global $errorStatus;
+			if ($errorStatus === "reportError") {
+				echo '<script> alert("There was a problem during error generation. Please try again.");
 			window.location="index.php"; </script> ';
-		} ?> 
+			}
+			?> 
 		
-		<?php global $errorStatus;
-		 if ($errorStatus === "invalidLogin") {
-			echo'<script> alert("Unable to generate the report. Please verify the login credentials and try again.");
+		<?php
+		
+global $errorStatus;
+		if ($errorStatus === "invalidLogin") {
+			echo '<script> alert("Unable to generate the report. Please verify the login credentials and try again.");
 			window.location="index.php"; </script> ';
-		} ?>
+		}
+		?>
 		
 		<?php if (!isset ( $_POST ['submitReport'] )) { ?>
 			<p align="center">
@@ -323,9 +337,12 @@ function authenticatedUser() {
 					total by quarter.</p>
 			</div>
 			<div id="chart_div_totalDataPackages"
-				style="width: 1000px; height: 400px;">				
-				</div>				
-				<button type="button" class="btn btn-primary" onclick="saveAsImg(document.getElementById('chart_div_totalDataPackages'));">Save the chart as Image File</button>
+				style="width: 1000px; height: 400px;"></div>
+			<div class="span3" style="text-align: center">
+				<button type="button" class="btn btn-primary"
+					onclick="saveAsImg(document.getElementById('chart_div_totalDataPackages'));">Save
+					as Image</button>
+			</div>
 				<?php
 		}
 		
@@ -338,7 +355,11 @@ function authenticatedUser() {
 			</div>
 			<div id="chart_div_dataPackagesDownloads"
 				style="width: 1000px; height: 400px;"></div>
-			<button type="button" class="btn btn-primary" onclick="saveAsImg(document.getElementById('chart_div_dataPackagesDownloads'));">Save the chart as Image File</button>	
+			<div class="span3" style="text-align: center">
+				<button type="button" class="btn btn-primary"
+					onclick="saveAsImg(document.getElementById('chart_div_dataPackagesDownloads'));">Save
+					as Image</button>
+			</div>
 			<?php
 		}
 		?>
@@ -422,10 +443,13 @@ function authenticatedUser() {
 					</tr>
 					<?php } ?>
 				</table>
+				<div class="span3" style="text-align: center">
+					<button id="reportButton" type="button" class="btn btn-primary">Copy
+						the report into a file</button>
+				</div>
 			</div>
-			
-			
 		<?php
+	
 		}
 		
 		if (isset ( $_SESSION ['totalDataPackages'] ))
@@ -441,7 +465,7 @@ function authenticatedUser() {
 			unset ( $_SESSION ['updateDataPackages'] );
 		
 		if (isset ( $_SESSION ['recentlyCreatedDataPackages'] )) {
-			unset ( $_SESSION ['recentlyCreatedDataPackages'] );			
+			unset ( $_SESSION ['recentlyCreatedDataPackages'] );
 		}
 		?>
 		</div>
@@ -455,9 +479,12 @@ function authenticatedUser() {
 	<script src="../dist/js/bootstrap.min.js"></script>
 
 	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
-	<script type="text/javascript" src="http://canvg.googlecode.com/svn/trunk/canvg.js"></script> 
-	<script type="text/javascript" src="http://canvg.googlecode.com/svn/trunk/rgbcolor.js"></script> 
-	<script type="text/javascript" src="http://canvg.googlecode.com/svn/trunk/StackBlur.js"></script>
+	<script type="text/javascript"
+		src="http://canvg.googlecode.com/svn/trunk/canvg.js"></script>
+	<script type="text/javascript"
+		src="http://canvg.googlecode.com/svn/trunk/rgbcolor.js"></script>
+	<script type="text/javascript"
+		src="http://canvg.googlecode.com/svn/trunk/StackBlur.js"></script>
 	<script type="text/javascript">
       google.load("visualization", "1", {packages:["corechart"]});
       google.setOnLoadCallback(drawChartTotalDataPackages);
@@ -548,8 +575,35 @@ function authenticatedUser() {
       function saveAsImg(chartContainer) {
           
     	var imgData = getImgData(chartContainer);
-        window.location = imgData.replace('image/png', 'image/octet-stream');
+    	$.post("savingImage.php",{data:imgData,file:"ImageFile"});
+    	window.location.href =  "download.php?path="+"../download/ImageFile.png";
       }
+
+      function delayedReportSave() {
+    	  window.setTimeout(downloadReport, 1000);
+    	}
+  	//Delay the file generation as embedding and conversion takes time.
+      function downloadReport() {
+    	  window.location.href =  "download.php?path="+"../download/LTERReport.xlsx";
+    	}
+    	      
 	</script>
+
+	<script
+		src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js">
+</script>
+	<script>
+$(document).ready(function(){
+ 	
+  $("#reportButton").click(function(){
+	  var imgData = getImgData(document.getElementById('chart_div_totalDataPackages'));
+	  $.post("savingImage.php",{data:imgData,file:"1"});
+	  var imgData = getImgData(document.getElementById('chart_div_dataPackagesDownloads'));
+	  $.post("savingImage.php",{data:imgData,file:"2"});
+	  $.ajax({url: 'htmlToCSVConversion.php'});
+	  delayedReportSave();	  
+  });
+});
+</script>
 </body>
 </html>
