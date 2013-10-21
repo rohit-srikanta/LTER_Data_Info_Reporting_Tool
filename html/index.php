@@ -578,12 +578,7 @@ global $errorStatus;
     	$.post("savingImage.php",{data:imgData,file:"ImageFile"});
     	window.location.href =  "download.php?path="+"../download/ImageFile.png";
       }
-
-      function delayedReportSave() {
-    	  window.setTimeout(downloadReport, 1000);
-    	}
-  	//Delay the file generation as embedding and conversion takes time.
-      function downloadReport() {
+  	  function downloadReport() {
     	  window.location.href =  "download.php?path="+"../download/LTERReport.xlsx";
     	}
     	      
@@ -600,8 +595,7 @@ $(document).ready(function(){
 	  $.post("savingImage.php",{data:imgData,file:"1"});
 	  var imgData = getImgData(document.getElementById('chart_div_dataPackagesDownloads'));
 	  $.post("savingImage.php",{data:imgData,file:"2"});
-	  $.ajax({url: 'htmlToCSVConversion.php'});
-	  delayedReportSave();	  
+	  $.ajax({url: 'htmlToCSVConversion.php',success:downloadReport});  
   });
 });
 </script>
