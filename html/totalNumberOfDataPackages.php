@@ -13,11 +13,11 @@ function updateTotalDataPackagesInputData($beginDate, $endDate) {
 }
 
 //Once we have the response from PASTA, we need to count the number of packages present and set those values which will be used to plot the graph.
-function createTotalDataPackagesOutput($xmlData, $quarter,$deleteCount) {
+function createTotalDataPackagesOutput($xmlData, $quarter,$deleteCount,$site) {
 	$responseXML = new SimpleXMLElement( $xmlData);
 	
 	require_once('countPackagesInEachQuarter.php');
-	$count = countPackages( $quarter, $responseXML);
+	$count = countPackages( $quarter, $responseXML,$site);
 	
 	for($i= 0 ;$i< 5; $i++){
 		$finalCount[$i] = $count [$i] - $deleteCount[$i];
@@ -36,11 +36,11 @@ function createTotalDataPackagesOutput($xmlData, $quarter,$deleteCount) {
 }
 
 //Once we have the response from PASTA, we need to count the number of packages present and set those values which will be used to plot the graph.
-function updateDataPackagesOutput($xmlData, $quarter) {
+function updateDataPackagesOutput($xmlData, $quarter, $site) {
 	$responseXML = new SimpleXMLElement( $xmlData);
 	
 	require_once('countPackagesInEachQuarter.php');
-	$count = countPackages( $quarter, $responseXML);
+	$count = countPackages( $quarter, $responseXML, $site);
 	
 	$_SESSION ['updateDataPackages1'] = $count ['1'];
 	$_SESSION ['updateDataPackages2'] = $count ['2'];
@@ -50,14 +50,14 @@ function updateDataPackagesOutput($xmlData, $quarter) {
 }
 
 //This method is used to populate the network statistics table. This method is a handler class to all the necessary data. 
-function countDataPackagesForYearAgo($quarter,$endDate){
-	countCreateDataPackagesAYearAgo($endDate);
-	countUpdateDataPackagesAYearAgoQuarter($quarter);
-	countCreateDataPackagesAYearAgoQuarter($quarter);
+function countDataPackagesForYearAgo($quarter,$endDate,$site){
+	countCreateDataPackagesAYearAgo($endDate,$site);
+	countUpdateDataPackagesAYearAgoQuarter($quarter,$site);
+	countCreateDataPackagesAYearAgoQuarter($quarter,$site);
 }
 //This method is used to count the total number of packages upto a year ago.
 //Since creating also comes with deletion, we count that as well and then displayed the aggregated number 
-function countCreateDataPackagesAYearAgo($endDate){
+function countCreateDataPackagesAYearAgo($endDate,$site){
 	$month = (substr($endDate,5,2));
 	$newEndDate = (date("Y") -1)."-".$month."-".(cal_days_in_month(CAL_GREGORIAN, $month,(date("Y")-1)));
 	
@@ -71,11 +71,11 @@ function countCreateDataPackagesAYearAgo($endDate){
 	
 	$deleteResponseXML = new SimpleXMLElement( $xmlData);
 	
-	$_SESSION ['totalCreateDataPackageAYearAgo'] = countTotalPackages($responseXML) - countTotalPackages($deleteResponseXML);
+	$_SESSION ['totalCreateDataPackageAYearAgo'] = countTotalPackages($responseXML,$site) - countTotalPackages($deleteResponseXML,$site);
 }
 
 //Count the total number of update/revisions for the same quarter but a year ago.
-function countUpdateDataPackagesAYearAgoQuarter($quarter){
+function countUpdateDataPackagesAYearAgoQuarter($quarter,$site){
 	
 	if(strpos($_SESSION ['quarterTitle']['4'],"-4")!== FALSE){
 		$endDate =(date("Y")-1)."-12-".cal_days_in_month(CAL_GREGORIAN, 12,(date("Y")-1));
@@ -104,10 +104,10 @@ function countUpdateDataPackagesAYearAgoQuarter($quarter){
 
 	$responseXML = new SimpleXMLElement( $xmlData);
 
-	$_SESSION ['totalUpdateDataPackageAYearAgo'] = countTotalPackages($responseXML);
+	$_SESSION ['totalUpdateDataPackageAYearAgo'] = countTotalPackages($responseXML,$site);
 }
 //Count the total number of create and deletes for the same quarter but a year ago.
-function countCreateDataPackagesAYearAgoQuarter($quarter){
+function countCreateDataPackagesAYearAgoQuarter($quarter,$site){
 	
 	if(strpos($_SESSION ['quarterTitle']['4'],"-4")!== FALSE){
 		$endDate =(date("Y")-1)."-12-".cal_days_in_month(CAL_GREGORIAN, 12,(date("Y")-1));
@@ -140,11 +140,11 @@ function countCreateDataPackagesAYearAgoQuarter($quarter){
 	
 	$deleteResponseXML = new SimpleXMLElement( $xmlData);
 
-	$_SESSION ['totalDataPackagesAyear'] = countTotalPackages($responseXML) - countTotalPackages($deleteResponseXML);
+	$_SESSION ['totalDataPackagesAyear'] = countTotalPackages($responseXML,$site) - countTotalPackages($deleteResponseXML,$site);
 }
 
 //Since we are calcualting the createDataPackage, we also need to take care of the number of packages deleted in the same quarter. The total created pacakges will be create - delete of the package.
-function countDeletedPackages($beginDate, $endDate,$quarter){	
+function countDeletedPackages($beginDate, $endDate,$quarter, $site){	
 	global $pastaURL;
 	$url = $pastaURL . "audit/report/?serviceMethod=deleteDataPackage&status=200&fromTime=" . $beginDate . "&toTime=" . $endDate;
 	$xmlData = returnAuditReportToolOutput( $url, $_POST ['username'], $_POST ['password']);
@@ -152,7 +152,7 @@ function countDeletedPackages($beginDate, $endDate,$quarter){
 	$responseXML = new SimpleXMLElement( $xmlData);
 	
 	require_once('countPackagesInEachQuarter.php');
-	$deleteCount = countPackages( $quarter, $responseXML);
+	$deleteCount = countPackages( $quarter, $responseXML, $site);
 	
 	return $deleteCount;
 }

@@ -9,20 +9,29 @@ function recentlyPublishedDataSetsInput($endDate) {
 	callAuditReportTool ( $url, $_POST ['username'], $_POST ['password'], "recentlyCreatedDataPackages" );
 }
 //Once we have the data that we want, we then randomly pick 10 data packages from the list. With these data packages, we retrieve the package metadata and populate the last table.
-function recentlyPublishedDataSets($xmlData) {
+function recentlyPublishedDataSets($xmlData, $site) {
 	global $pastaURL;
 	$responseXML = new SimpleXMLElement ( $xmlData );
 	
+	$site = str_replace(' ', '', $site);
 	$j = 0;
 	//Store the resource id of all the fetched data packages. If the package id contains ecotrends, ignore that data package.
 	foreach ( $responseXML as $record ) {
 		
-		if (strpos($record->resourceId, "ecotrends") !== false)
+		//If we are generating report for all sites, then exclude ecotrends, if not count only site specific entries.
+		if(($site == "AllSites") && (strpos($record->resourceId, "ecotrends") !== false))
+			continue;
+		if(($site != "AllSites") && (strpos($record->resourceId, $site) == false))
 			continue;
 		
 		$recentDataPackages [$j++] = substr ( $record->resourceId, 38 );
 	}
-	
+	//There can be a situation where in no updates are present for that site in the last 3 months. If thats the case, then do not show the 4th table
+	if(!isset($recentDataPackages)){
+		if (isset ( $_SESSION ['recentPackages'] ))
+			unset ( $_SESSION ['recentPackages'] );
+		return;
+	}
 	//Randomly pick 10 data packages that will be shown on the webpage
 	for($i = 0; $i < 10; $i ++) {
 		$randomNumbers [$i] = mt_rand ( 0, count($recentDataPackages));
@@ -30,7 +39,9 @@ function recentlyPublishedDataSets($xmlData) {
 	sort ( $randomNumbers );
 	
 	//For every randomly picked data package, retrieve the metadata that contains information such as author, date and title
-	for($i = 0; $i < 10; $i ++) {
+	
+	$size = (count($recentDataPackages) > 10 ? 10 : count($recentDataPackages));
+	for($i = 0; $i < $size; $i ++) {
 		$url = $pastaURL . "package/metadata/eml/" . $recentDataPackages [$randomNumbers [$i]];
 		$returnvalue = returnAuditReportToolOutput ( $url, $_POST ['username'], $_POST ['password'] );
 		

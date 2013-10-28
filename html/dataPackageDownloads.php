@@ -12,11 +12,11 @@ function createDataPackagesArchiveDownloadsInputData($beginDate, $endDate) {
 	callAuditReportTool ( $url, $_POST ['username'], $_POST ['password'], "dataPackageArchiveDownloads" );
 }
 //Once we have the response from PASTA, we need to count the number of packages present and set those values which will be used to plot the graph.
-function createDataPackagesDownloadOutput($xmlData, $quarter) {
+function createDataPackagesDownloadOutput($xmlData, $quarter, $site) {
 	$responseXML = new SimpleXMLElement ( $xmlData );
 	
 	require_once ('countPackagesInEachQuarter.php');	
-	$count = countPackages ( $quarter, $responseXML );
+	$count = countPackages ( $quarter, $responseXML , $site);
 	
 	$_SESSION ['dataPackageDownloads1'] = $count ['1'];
 	$_SESSION ['dataPackageDownloads2'] = $count ['2'];
@@ -25,11 +25,11 @@ function createDataPackagesDownloadOutput($xmlData, $quarter) {
 	$_SESSION ['dataPackageDownloads0'] = $count ['0'];
 }
 //Once we have the response from PASTA, we need to count the number of packages present and set those values which will be used to plot the graph.
-function createDataPackagesArchiveDownloadOutput($xmlData, $quarter) {
+function createDataPackagesArchiveDownloadOutput($xmlData, $quarter, $site) {
 	$responseXML = new SimpleXMLElement ( $xmlData );
 
 	require_once ('countPackagesInEachQuarter.php');	
-	$count = countPackages ( $quarter, $responseXML );
+	$count = countPackages ( $quarter, $responseXML, $site );
 	
 	$_SESSION ['dataPackageArchiveDownloads1'] = $count ['1'];
 	$_SESSION ['dataPackageArchiveDownloads2'] = $count ['2'];

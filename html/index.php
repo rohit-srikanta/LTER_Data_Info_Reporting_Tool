@@ -32,7 +32,7 @@ if (isset ( $_POST ['submitReport'] )) {
 	$errorStatus = "";
 	
 	// Calling the starter method to generate report.
-	$reportGenerationStatus = generateReport ();
+	$reportGenerationStatus = generateReport ($_POST ['site']);
 	
 	// If the user credentials is not correct, exit the report generation without computing the report.
 	if ($reportGenerationStatus == "invalidLogin") {
@@ -47,7 +47,7 @@ if (isset ( $_POST ['submitReport'] )) {
 }
 
 // The main starter method where we process all the reports in sequence. This method controls all the methods that call PASTA to retrive the necessary information.
-function generateReport() {
+function generateReport($site) {
 	session_start ();
 	
 	$username = $_POST ['username'];
@@ -87,8 +87,8 @@ function generateReport() {
 	require_once ('totalNumberOfDataPackages.php');
 	createTotalDataPackagesInputData ( $beginDate, $endDate );
 	if (isset ( $_SESSION ['totalDataPackages'] ) && $_SESSION ['totalDataPackages'] != null) {
-		$deleteCount = countDeletedPackages ( $beginDate, $endDate, $quarter );
-		createTotalDataPackagesOutput ( $_SESSION ['totalDataPackages'], $quarter, $deleteCount );
+		$deleteCount = countDeletedPackages ( $beginDate, $endDate, $quarter , $site);
+		createTotalDataPackagesOutput ( $_SESSION ['totalDataPackages'], $quarter, $deleteCount, $site );
 	}
 	// Adding a sleep command as making numerous calls to PASTA in a short interval results in failure to get the information.
 	sleep ( 2 );
@@ -97,25 +97,25 @@ function generateReport() {
 	require_once ('dataPackageDownloads.php');
 	createDataPackagesDownloadsInputData ( $beginDate, $endDate );
 	if (isset ( $_SESSION ['dataPackageDownloads'] ) && $_SESSION ['dataPackageDownloads'] != null)
-		createDataPackagesDownloadOutput ( $_SESSION ['dataPackageDownloads'], $quarter );
+		createDataPackagesDownloadOutput ( $_SESSION ['dataPackageDownloads'], $quarter , $site);
 		
 		// Include the file that is used to compute the total number of archive package downloads and compute it
 	createDataPackagesArchiveDownloadsInputData ( $beginDate, $endDate );
 	if (isset ( $_SESSION ['dataPackageArchiveDownloads'] ) && $_SESSION ['dataPackageArchiveDownloads'] != null)
-		createDataPackagesArchiveDownloadOutput ( $_SESSION ['dataPackageArchiveDownloads'], $quarter );
+		createDataPackagesArchiveDownloadOutput ( $_SESSION ['dataPackageArchiveDownloads'], $quarter , $site);
 		
 		// Include the file that is used to compute the total number of packages that were updated and compute it
 	updateTotalDataPackagesInputData ( $beginDate, $endDate );
 	if (isset ( $_SESSION ['updateDataPackages'] ) && $_SESSION ['updateDataPackages'] != null)
-		updateDataPackagesOutput ( $_SESSION ['updateDataPackages'], $quarter );
+		updateDataPackagesOutput ( $_SESSION ['updateDataPackages'], $quarter, $site );
 	
-	countDataPackagesForYearAgo ( $quarter, $endDate );
+	countDataPackagesForYearAgo ( $quarter, $endDate,$site );
 	
 	// Include the file that is used to compute the random list to of packages created in the last three months.
 	require_once ('recentlyPublishedDatasets.php');
 	recentlyPublishedDataSetsInput ( $endDate );
 	if (isset ( $_SESSION ['recentlyCreatedDataPackages'] ) && $_SESSION ['recentlyCreatedDataPackages'] != null)
-		recentlyPublishedDataSets ( $_SESSION ['recentlyCreatedDataPackages'] );
+		recentlyPublishedDataSets ( $_SESSION ['recentlyCreatedDataPackages'] , $site);
 	return "success";
 }
 // Method to compute the quarter to which we generate the report. Since we are calculating the report for one year, this report will have exactly 4 quarters
@@ -238,6 +238,36 @@ function authenticatedUser() {
 		return true;
 }
 
+function populateDropdownContent()
+{	
+	$dropdown[1] = 'knb-lter-and';
+	$dropdown[2] = 'knb-lter-arc';
+	$dropdown[3] = 'knb-lter-bes';
+	$dropdown[4] = 'knb-lter-bnz';
+	$dropdown[5] = 'knb-lter-cap';
+	$dropdown[6] = 'knb-lter-cce';
+	$dropdown[7] = 'knb-lter-cdr';
+	$dropdown[8] = 'knb-lter-cwt';
+	$dropdown[9] = 'knb-lter-fce';
+	$dropdown[10] = 'knb-lter-gce';
+	$dropdown[11] = 'knb-lter-hfr';
+	$dropdown[12] = 'knb-lter-kbs';
+	$dropdown[13] = 'knb-lter-knz';
+	$dropdown[14] = 'knb-lter-luq';
+	$dropdown[15] = 'knb-lter-mcm';
+	$dropdown[16] = 'knb-lter-mcr';
+	$dropdown[17] = 'knb-lter-nin';
+	$dropdown[18] = 'knb-lter-ntl';
+	$dropdown[19] = 'knb-lter-nwk';
+	$dropdown[20] = 'knb-lter-nwt';
+	$dropdown[21] = 'knb-lter-pie';
+	$dropdown[22] = 'knb-lter-sbc';
+	$dropdown[23] = 'knb-lter-sev';
+	$dropdown[24] = 'knb-lter-vcr';
+	$dropdown[25] = 'ecotrends';
+	
+	return $dropdown;
+}
 ?>
   <body>
 
@@ -308,14 +338,28 @@ global $errorStatus;
 			<form id="reportForm" class="form-signin" method="POST"
 				action="index.php">
 				<input id="username" name="username" type="text"
-					class="form-control" placeholder="Username" autofocus> <input
-					id="password" name="password" type="password" class="form-control"
-					placeholder="Password">
-				<p>
-					Generate LTER Network Report : <br> <input type="radio"
-						name="quarter" checked value="current">&nbsp;Including Current
-					Quarter<br> <input type="radio" name="quarter" value="previous">&nbsp;Excluding
-					Current Quarter<br>
+					class="form-control" placeholder="Username" autofocus> 
+				<input id="password" name="password" type="password" class="form-control"
+					placeholder="Password"><br>
+					
+					<div class="dropdown">
+       				Select site : 
+       					<button type="button" id="siteSelectButton" class="btn btn-primary dropdown-toggle" data-toggle="dropdown"> Select &nbsp;<span class="caret"></span> </button>
+        					<ul class="dropdown-menu">
+        					<li><a>All Sites</a></li>
+        					<li role="presentation" class="divider"></li>
+    				            <?php			
+									$rows = populateDropdownContent();
+									for($i = 1; $i <= sizeof($rows); $i ++) {									
+								?>
+									<li><a><?php echo $rows[$i]?></a></li>
+								<?php } ?>
+							</ul>
+					</div>
+					<input id="site" name="site" type="hidden" value="">
+				<p><br>
+					Generate LTER Network Report : <br> <input type="radio" name="quarter" checked value="current">&nbsp;Including CurrentQuarter
+					<br> <input type="radio" name="quarter" value="previous">&nbsp;ExcludingCurrent Quarter<br>
 				</p>
 				<button class="btn btn-lg btn-primary btn-block" type="submit"
 					name="submitReport">Generate LTER Network Information System Report</button>
@@ -329,7 +373,9 @@ global $errorStatus;
 		if (isset ( $_SESSION ['totalDataPackages4'] )) {
 			
 			?>
-			<div class="starter-template">
+			
+			<div class="starter-template"><hr>
+			<p class="lead">Report for Site : <?php echo $_POST ['site']?> </p><hr>
 				<p class="lead">Total Number Of Data Packages In Network Information
 					System</p>
 				<p>This report reflects the total number of data packages published
@@ -414,7 +460,7 @@ global $errorStatus;
 		?>
 		
 		<?php
-		if (isset ( $_SESSION ['recentlyCreatedDataPackages'] )) {
+		if ((isset ( $_SESSION ['recentlyCreatedDataPackages'])) && (isset($_SESSION ['recentPackages']))) {
 			
 			?>
 		<div class="starter-template">
@@ -434,7 +480,8 @@ global $errorStatus;
 					<?php
 			
 			$data = $_SESSION ['recentPackages'];
-			for($i = 0; $i < 10; $i ++) {
+			$size = (count($data) > 10 ? 10 : count($data));
+			for($i = 0; $i < $size; $i ++) {
 				?><tr>
 						<td><a href=<?php echo $data[$i]['identifierLink'];?>><?php echo $data[$i]['name']; ?></a></td>
 						<td><?php echo $data[$i]['author']; ?></td>
@@ -443,29 +490,36 @@ global $errorStatus;
 					</tr>
 					<?php } ?>
 				</table>
-				<div class="span3" style="text-align: center">
-					<button id="reportButton" type="button" class="btn btn-primary">Copy
-						the report into a file</button>
-				</div>
 			</div>
 		<?php
 	
 		}
 		
-		if (isset ( $_SESSION ['totalDataPackages'] ))
-			unset ( $_SESSION ['totalDataPackages'] );
+		if (isset ( $_SESSION ['totalDataPackages'] )){
+			unset ( $_SESSION ['totalDataPackages'] );		
+		}
 		
-		if (isset ( $_SESSION ['dataPackageDownloads'] ))
-			unset ( $_SESSION ['dataPackageDownloads'] );
-		
-		if (isset ( $_SESSION ['dataPackageArchiveDownloads'] ))
-			unset ( $_SESSION ['dataPackageArchiveDownloads'] );
-		
-		if (isset ( $_SESSION ['updateDataPackages'] ))
+		if (isset ( $_SESSION ['updateDataPackages'] )){
 			unset ( $_SESSION ['updateDataPackages'] );
+		}
+		if (isset ( $_SESSION ['dataPackageDownloads'] )){
+			unset ( $_SESSION ['dataPackageDownloads'] );
+		}
+		if (isset ( $_SESSION ['dataPackageArchiveDownloads'] )){
+			unset ( $_SESSION ['dataPackageArchiveDownloads'] );
+		}
 		
 		if (isset ( $_SESSION ['recentlyCreatedDataPackages'] )) {
 			unset ( $_SESSION ['recentlyCreatedDataPackages'] );
+		}
+		?>
+		
+		<?php if (isset ( $_POST ['submitReport'] )) { ?>
+		<div class="span3" style="text-align: center">
+					<button id="reportButton" type="button" class="btn btn-primary">Copy
+						the report into a file</button>
+				</div>
+		<?php
 		}
 		?>
 		</div>
@@ -541,11 +595,21 @@ global $errorStatus;
 				if(($('#username').val().length == 0) || ($('#password').val().length == 0)){
 					alert("Please enter username and password for report generation");
 					return false;
+				}
+				if($.trim($('.dropdown').find('#siteSelectButton').text()) == "Select"){
+					alert("Please select the site to generate the report");
+					return false;
 				}		
 				$('#reportForm').hide();
 				$('#afterSubmit').show();
+				$('#site').val($('.dropdown').find('#siteSelectButton').text());				
 			
 		}).change();
+
+		$(".dropdown-menu li a").click(function(){
+			  var selText = $(this).text();	
+			  $(this).parents('.dropdown').find('#siteSelectButton').html(selText+' <span class="caret"></span>');
+			});
 		
 	});
 </script>
