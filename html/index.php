@@ -240,33 +240,20 @@ function authenticatedUser() {
 
 function populateDropdownContent()
 {	
-	$dropdown[1] = 'knb-lter-and';
-	$dropdown[2] = 'knb-lter-arc';
-	$dropdown[3] = 'knb-lter-bes';
-	$dropdown[4] = 'knb-lter-bnz';
-	$dropdown[5] = 'knb-lter-cap';
-	$dropdown[6] = 'knb-lter-cce';
-	$dropdown[7] = 'knb-lter-cdr';
-	$dropdown[8] = 'knb-lter-cwt';
-	$dropdown[9] = 'knb-lter-fce';
-	$dropdown[10] = 'knb-lter-gce';
-	$dropdown[11] = 'knb-lter-hfr';
-	$dropdown[12] = 'knb-lter-kbs';
-	$dropdown[13] = 'knb-lter-knz';
-	$dropdown[14] = 'knb-lter-luq';
-	$dropdown[15] = 'knb-lter-mcm';
-	$dropdown[16] = 'knb-lter-mcr';
-	$dropdown[17] = 'knb-lter-nin';
-	$dropdown[18] = 'knb-lter-ntl';
-	$dropdown[19] = 'knb-lter-nwk';
-	$dropdown[20] = 'knb-lter-nwt';
-	$dropdown[21] = 'knb-lter-pie';
-	$dropdown[22] = 'knb-lter-sbc';
-	$dropdown[23] = 'knb-lter-sev';
-	$dropdown[24] = 'knb-lter-vcr';
-	$dropdown[25] = 'ecotrends';
+
+	//Retrieve the username password from the store file
+	$pass = file_get_contents('./pass.txt', NULL, NULL, 57);
+	$credentials = explode(":",$pass);
 	
-	return $dropdown;
+	global $pastaURL;
+	$url = $pastaURL . "package/eml";
+	if(count($credentials) == 2){
+		$test = returnAuditReportToolOutput ( $url, $credentials[0],$credentials[1]);
+		//Split up the site names based on the identifier
+		$dropdown = preg_split('/\s+/', $test);
+		return $dropdown;
+	}
+	return null;
 }
 ?>
   <body>
@@ -350,7 +337,7 @@ global $errorStatus;
         					<li role="presentation" class="divider"></li>
     				            <?php			
 									$rows = populateDropdownContent();
-									for($i = 1; $i <= sizeof($rows); $i ++) {									
+									for($i = 0; $i < sizeof($rows); $i ++) {									
 								?>
 									<li><a><?php echo $rows[$i]?></a></li>
 								<?php } ?>
