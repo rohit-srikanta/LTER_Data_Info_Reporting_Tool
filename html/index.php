@@ -34,6 +34,8 @@ if (isset ( $_POST ['submitReport'] )) {
 	// Calling the starter method to generate report.
 	$reportGenerationStatus = generateReport ($_POST ['site']);
 	
+	$_SESSION['site'] = $_POST ['site'];
+	
 	// If the user credentials is not correct, exit the report generation without computing the report.
 	if ($reportGenerationStatus == "invalidLogin") {
 		global $errorStatus;
@@ -353,7 +355,11 @@ global $errorStatus;
 			?>
 			
 			<div class="starter-template"><hr>
-			<p class="lead">Report for Site : <?php echo $_POST ['site']?> </p><hr>
+			<p class="lead">Report for Site : <?php echo $_POST ['site']?> </p> &nbsp;
+					<div class="span3" style="text-align: center">
+					<button id="reportButton" type="button" class="btn btn-primary">Save report as a file</button>
+				<br>
+				</div><hr>
 				<p class="lead">Total Number Of Data Packages In Network Information
 					System</p>
 				<p>This report reflects the total number of data packages published
@@ -494,13 +500,16 @@ global $errorStatus;
 		
 		<?php if (isset ( $_POST ['submitReport'] )) { ?>
 		<div class="span3" style="text-align: center">
-					<button id="reportButton" type="button" class="btn btn-primary">Copy
+					<button id="reportButton1" type="button" class="btn btn-primary">Copy
 						the report into a file</button>
+				<br><br><br><br>
 				</div>
 		<?php
 		}
 		?>
+		
 		</div>
+		
 	</div>
 	<!-- /.container -->
 
@@ -617,12 +626,16 @@ global $errorStatus;
       function saveAsImg(chartContainer) {
           
     	var imgData = getImgData(chartContainer);
-    	$.post("savingImage.php",{data:imgData,file:"ImageFile"});
-    	window.location.href =  "download.php?path="+"../download/ImageFile.png";
+    	$.post("savingImage.php",{data:imgData,file:"ImageFile"},downloadImage);
       }
+
+      function downloadImage() {
+    	  window.location.href =  "download.php?path="+"../download/ImageFile.png";
+       }
+  	
   	  function downloadReport() {
     	  window.location.href =  "download.php?path="+"../download/LTERReport.xlsx";
-    	}
+      }
     	      
 	</script>
 
@@ -632,14 +645,18 @@ global $errorStatus;
 	<script>
 $(document).ready(function(){
  	
-  $("#reportButton").click(function(){
+  $("#reportButton").click(genReport);
+  $("#reportButton1").click(genReport);
+  
+});
+
+function genReport(){
 	  var imgData = getImgData(document.getElementById('chart_div_totalDataPackages'));
 	  $.post("savingImage.php",{data:imgData,file:"1"});
 	  var imgData = getImgData(document.getElementById('chart_div_dataPackagesDownloads'));
 	  $.post("savingImage.php",{data:imgData,file:"2"});
 	  $.ajax({url: 'htmlToCSVConversion.php',success:downloadReport});  
-  });
-});
+}
 </script>
 </body>
 </html>

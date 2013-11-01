@@ -50,6 +50,12 @@
 	// Add some data, we will use printing features
 	session_start ();
 	
+	echo "------".$_SESSION ['site'];
+	var_dump($_SESSION ['site']);
+	
+	$objPHPExcel->getActiveSheet ()->setCellValue ( 'C' .(2), "Report for ".$_SESSION ['site']);
+	$objPHPExcel->getActiveSheet()->getStyle("C2")->getFont()->setBold(true);
+	
 	$objPHPExcel->getActiveSheet ()->setCellValue ( 'A' .(48), "Network Summary Statistics" );
 	
 	$objPHPExcel->getActiveSheet ()->setCellValue ( 'B' .(50), $_SESSION['CurrentQuarterDate']);
@@ -111,6 +117,6 @@
 	$objWriter->save('../download/LTERReport.xlsx');
 	
 	require_once ('EmbedImageIntoCSV.php');	
-	embedImageIntoCSV('../download/1.png', 'B2' ,'../download/LTERReport.xlsx',$objPHPExcel);
+	embedImageIntoCSV('../download/1.png', 'B4' ,'../download/LTERReport.xlsx',$objPHPExcel);
 	embedImageIntoCSV('../download/2.png', 'B25' ,'../download/LTERReport.xlsx',$objPHPExcel);
 
