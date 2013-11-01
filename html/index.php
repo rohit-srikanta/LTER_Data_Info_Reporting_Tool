@@ -238,22 +238,13 @@ function authenticatedUser() {
 		return true;
 }
 
-function populateDropdownContent()
-{	
-
-	//Retrieve the username password from the store file
-	$pass = file_get_contents('./pass.txt', NULL, NULL, 57);
-	$credentials = explode(":",$pass);
-	
+function populateDropdownContent() {
 	global $pastaURL;
 	$url = $pastaURL . "package/eml";
-	if(count($credentials) == 2){
-		$test = returnAuditReportToolOutput ( $url, $credentials[0],$credentials[1]);
-		//Split up the site names based on the identifier
-		$dropdown = preg_split('/\s+/', $test);
-		return $dropdown;
-	}
-	return null;
+  $site_list = file_get_contents($url);
+  //Split up the site names based on the newline
+  $dropdown = preg_split('/\s+/', $site_list);
+  return $dropdown;
 }
 ?>
   <body>
