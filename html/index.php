@@ -500,8 +500,8 @@ global $errorStatus;
 		
 		<?php if (isset ( $_POST ['submitReport'] )) { ?>
 		<div class="span3" style="text-align: center">
-					<button id="reportButton1" type="button" class="btn btn-primary">Copy
-						the report into a file</button>
+					<button id="reportButton1" type="button" class="btn btn-primary">Save
+						report as a file</button>
 				<br><br><br><br>
 				</div>
 		<?php
