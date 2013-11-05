@@ -284,7 +284,7 @@ function populateDropdownContent() {
 				package inventory as published in the LTER network information
 				system. It is produced to highlight the volume of public access data
 				produced by the LTER network of research sites. This report is
-				intended for the LTER Executive Board, National Science Foundation
+				intended for the LTER Personnel, National Science Foundation
 				program officers, and other interested parties</p>
 			<hr>
 		</div>
@@ -338,8 +338,8 @@ global $errorStatus;
 					</div>
 					<input id="site" name="site" type="hidden" value="">
 				<p><br>
-					Generate LTER Network Report : <br> <input type="radio" name="quarter" checked value="current">&nbsp;Including CurrentQuarter
-					<br> <input type="radio" name="quarter" value="previous">&nbsp;ExcludingCurrent Quarter<br>
+					Generate LTER Network Report : <br> <input type="radio" name="quarter" checked value="current">&nbsp;Including Current Quarter
+					<br> <input type="radio" name="quarter" value="previous">&nbsp;Excluding Current Quarter<br>
 				</p>
 				<button class="btn btn-lg btn-primary btn-block" type="submit"
 					name="submitReport">Generate LTER Network Information System Report</button>
