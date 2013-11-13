@@ -5,7 +5,7 @@ $file = trim($_GET['path']);
 if (file_exists($file)) {
 	echo "Inside....";
     header('Content-Description: File Transfer');
-    header('Content-Type: text/csv');
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     header('Content-Disposition: attachment; filename='.basename($file));
     header('Content-Transfer-Encoding: binary');
     header('Expires: 0');
