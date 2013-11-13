@@ -479,7 +479,7 @@ global $errorStatus;
 			</div>
 		<?php
 	
-		}
+		} // end if isset( recentlyCreatedDataPackages and recentPackages)
 		
 		if (isset ( $_SESSION ['totalDataPackages'] )){
 			unset ( $_SESSION ['totalDataPackages'] );		
@@ -518,15 +518,12 @@ global $errorStatus;
 	<!-- Bootstrap core JavaScript
     ================================================== -->
 	<!-- Placed at the end of the document so the pages load faster -->
-	<script src="../assets/js/jquery.js"></script>
-	<script src="../dist/js/bootstrap.min.js"></script>
-
-	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
-	<script type="text/javascript" src="http://canvg.googlecode.com/svn/trunk/canvg.js"></script>
-	<script type="text/javascript"
-		src="http://canvg.googlecode.com/svn/trunk/rgbcolor.js"></script>
-	<script type="text/javascript"
-		src="http://canvg.googlecode.com/svn/trunk/StackBlur.js"></script>
+	<script type="text/javascript" src="../assets/js/jquery.js"></script>
+	<script type="text/javascript" src="../dist/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="//www.google.com/jsapi"></script>
+	<script type="text/javascript" src="//canvg.googlecode.com/svn/trunk/canvg.js"></script>
+	<script type="text/javascript" src="//canvg.googlecode.com/svn/trunk/rgbcolor.js"></script>
+	<script type="text/javascript" src="//canvg.googlecode.com/svn/trunk/StackBlur.js"></script>
 	<script type="text/javascript">
       google.load("visualization", "1", {packages:["corechart"]});
       google.setOnLoadCallback(drawChartTotalDataPackages);
@@ -637,13 +634,8 @@ global $errorStatus;
   	  function downloadReport() {
     	  window.location.href =  "download.php?path="+"../download/LTERReport.xlsx";
       }
-    	      
-	</script>
-
-	<script
-		src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js">
-</script>
-	<script>
+  </script>
+	<script type="text/javascript">
 $(document).ready(function(){
  	
   $("#reportButton").click(genReport);
