@@ -1,0 +1,27 @@
+body {
+  margin:0; padding:0; line-height: 1.4em; word-spacing:1px; letter-spacing:0.2px; font: 13px Arial, Helvetica,"Lucida Grande", serif; color: #000;
+}
+
+.starter-template {
+  padding: 40px 15px;
+  text-align: center;
+}
+.page-break{ 
+  display: block; 
+  page-break-before: always; 
+}
+
+.btn {  /* dont display buttons */
+  display:none;
+}
+
+/* from bootstrap */
+.table-bordered > tbody > tr > th {
+  border: 1px solid #dddddd;
+}
+th { font-weight: bold; }
+td { font-weight: normal; font-size: 100% }
+table {
+  border-spacing: 2px;
+  border-color: gray;
+}

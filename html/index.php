@@ -1,19 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="">
-<meta name="author" content="">
-<link rel="shortcut icon" href="../assets/ico/LTER.png">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <link rel="shortcut icon" href="../assets/ico/LTER.png">
 
-<title>LTER Network Information System Reporting Tool</title>
+  <title>LTER Network Information System Reporting Tool</title>
 
-<!-- Bootstrap core CSS -->
-<link href="../dist/css/bootstrap.css" rel="stylesheet">
+  <!-- Bootstrap core CSS -->
+  <link href="../dist/css/bootstrap.css" rel="stylesheet">
 
-<!-- Custom styles for this template -->
-<link href="../assets/css/index.css" rel="stylesheet">
+  <!-- Custom styles for this template -->
+  <link href="../assets/css/index.css" rel="stylesheet">
+  <link href="../assets/css/print.css" rel="stylesheet" media="print"/>
 
 </head>
 <?php
@@ -378,7 +379,8 @@ global $errorStatus;
 		
 		if (isset ( $_SESSION ['dataPackageDownloads4'] )) {
 			?>
-					<div class="starter-template">
+      <div class="page-break"> </div> 
+      <div class="starter-template">
 				<p class="lead">Number of Data Package Downloads</p>
 				<p>This graphic reflects the number of data package downloads from
 					the LTER network information system by quarter.</p>
@@ -445,8 +447,8 @@ global $errorStatus;
 		
 		<?php
 		if ((isset ( $_SESSION ['recentlyCreatedDataPackages'])) && (isset($_SESSION ['recentPackages']))) {
-			
 			?>
+    <div class="page-break"> </div> 
 		<div class="starter-template">
 				<p class="lead">Selection of Recently Published Datasets (Last Three
 					Months)</p>
@@ -520,8 +522,7 @@ global $errorStatus;
 	<script src="../dist/js/bootstrap.min.js"></script>
 
 	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
-	<script type="text/javascript"
-		src="http://canvg.googlecode.com/svn/trunk/canvg.js"></script>
+	<script type="text/javascript" src="http://canvg.googlecode.com/svn/trunk/canvg.js"></script>
 	<script type="text/javascript"
 		src="http://canvg.googlecode.com/svn/trunk/rgbcolor.js"></script>
 	<script type="text/javascript"
