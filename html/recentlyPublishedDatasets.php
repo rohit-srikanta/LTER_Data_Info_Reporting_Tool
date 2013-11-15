@@ -33,8 +33,18 @@ function recentlyPublishedDataSets($xmlData, $site) {
 		return;
 	}
 	//Randomly pick 10 data packages that will be shown on the webpage
-	for($i = 0; $i < 10; $i ++) {
-		$randomNumbers [$i] = mt_rand ( 0, count($recentDataPackages));
+	$randomNumbers = array();
+	$size = (count($recentDataPackages) > 10 ? 10 : count($recentDataPackages));
+	for($i = 0; $i < $size; $i++) {
+		$randomValue = mt_rand ( 0, (count($recentDataPackages)-1));
+		
+		if(in_array($randomValue,$randomNumbers,true))
+		{	
+			$i--;
+			continue;
+		}
+		else
+			$randomNumbers [$i] = $randomValue;
 	}
 	sort ( $randomNumbers );
 	
