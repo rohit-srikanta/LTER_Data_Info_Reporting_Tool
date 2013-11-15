@@ -3,7 +3,6 @@ $file = trim($_GET['path']);
 
 // force user to download the image
 if (file_exists($file)) {
-	echo "Inside....";
     header('Content-Description: File Transfer');
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     header('Content-Disposition: attachment; filename='.basename($file));

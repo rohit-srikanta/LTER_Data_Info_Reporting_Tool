@@ -50,9 +50,6 @@
 	// Add some data, we will use printing features
 	session_start ();
 	
-	echo "------".$_SESSION ['site'];
-	var_dump($_SESSION ['site']);
-	
 	$objPHPExcel->getActiveSheet ()->setCellValue ( 'C' .(2), "Report for ".$_SESSION ['site']);
 	$objPHPExcel->getActiveSheet()->getStyle("C2")->getFont()->setBold(true);
 	
@@ -113,10 +110,12 @@
 	// Set active sheet index to the first sheet, so Excel opens this as the first sheet
 	$objPHPExcel->setActiveSheetIndex ( 0 );
 	
+	$sessionID = session_id();
+	$fileName = "LTERReport".$sessionID.".xlsx";	
 	$objWriter = PHPExcel_IOFactory::createWriter ( $objPHPExcel, 'Excel2007' );
-	$objWriter->save('../download/LTERReport.xlsx');
+	$objWriter->save('../download/'.$fileName);
 	
 	require_once ('EmbedImageIntoCSV.php');	
-	embedImageIntoCSV('../download/1.png', 'B4' ,'../download/LTERReport.xlsx',$objPHPExcel);
-	embedImageIntoCSV('../download/2.png', 'B25' ,'../download/LTERReport.xlsx',$objPHPExcel);
+	embedImageIntoCSV('../download/1.png', 'B4' ,'../download/'.$fileName,$objPHPExcel);
+	embedImageIntoCSV('../download/2.png', 'B25' ,'../download/'.$fileName,$objPHPExcel);
 

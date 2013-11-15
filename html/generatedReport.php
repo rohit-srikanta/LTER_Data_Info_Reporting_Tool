@@ -591,7 +591,13 @@ global $errorStatus;
        }
   	
   	  function downloadReport() {
-    	  window.location.href =  "download.php?path="+"../download/LTERReport.xlsx";
+  		  sessionID = getPHPSessId();
+  		  if(sessionID == ''){
+  	  		  alert("Report cannot be saved as a file. Please try again later.");
+  	  		  return;
+  		  }
+  		  fileName = "LTERReport"+sessionID+".xlsx"
+    	  window.location.href =  "download.php?path="+"../download/"+fileName;
       }
     	      
 	</script>
@@ -613,6 +619,26 @@ function genReport(){
 	  var imgData = getImgData(document.getElementById('chart_div_dataPackagesDownloads'));
 	  $.post("savingImage.php",{data:imgData,file:"2"});
 	  $.ajax({url: 'htmlToCSVConversion.php',success:downloadReport});  
+}
+
+function getPHPSessId() {
+    var phpSessionId = document.cookie.match(/PHPSESSID=[^;]+/);
+
+    if(phpSessionId == null) 
+        return '';
+
+    if(typeof(phpSessionId) == 'undefined')
+        return '';
+
+    if(phpSessionId.length <= 0)
+        return '';
+
+    phpSessionId = phpSessionId[0];
+
+    var end = phpSessionId.lastIndexOf(';');
+    if(end == -1) end = phpSessionId.length;
+
+    return phpSessionId.substring(10, end);
 }
 </script>
 </body>
