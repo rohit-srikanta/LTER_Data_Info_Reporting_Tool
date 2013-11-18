@@ -268,6 +268,7 @@ function populateDropdownContent() {
 			<div class="collapse navbar-collapse">
 				<ul class="nav navbar-nav">
 					<li class="active"><a href="index.php">Home</a></li>
+					<li><a href="submitReportID.php">Retrieve Old Reports</a></li>
 					<li><a href="aboutLTER.html">About</a></li>
 					<li><a href="contact.html">Contact</a></li>
 				</ul>
@@ -315,7 +316,7 @@ global $errorStatus;
 			?>
 			
 			<div class="starter-template"><hr>
-			<p class="lead">Report for Site : <?php echo $_POST ['site']?> </p> &nbsp;
+			<p class="lead">Report for Site : <?php echo $_POST ['site'] ;?> </p> &nbsp;
 					<div class="span3" style="text-align: center">
 					<button id="reportButton" type="button" class="btn btn-primary">Save report as a file</button>
 				<br>
@@ -440,6 +441,7 @@ global $errorStatus;
 		<?php
 	
 		} // end if isset( recentlyCreatedDataPackages and recentPackages)
+		//saveCurrentPage();
 		
 		if (isset ( $_SESSION ['totalDataPackages'] )){
 			unset ( $_SESSION ['totalDataPackages'] );		
@@ -464,6 +466,18 @@ global $errorStatus;
 		<div class="span3" style="text-align: center">
 					<button id="reportButton1" type="button" class="btn btn-primary">Save
 						report as a file</button>
+				<br><br>
+				</div>
+				
+					<div class="span3" style="text-align: center">
+					<button id=saveReport type="button" class="btn btn-primary">Save report on server for future reference</button>
+					<div id="reportIDDiv" >
+			       		<span id="textSpan"></span>			       		
+					</div>
+					<div id="reportIDLinkDiv" >
+					<span id="linkSpan"></span>
+					</div>
+				</div>
 				<br><br><br><br>
 				</div>
 		<?php
@@ -610,6 +624,7 @@ $(document).ready(function(){
  	
   $("#reportButton").click(genReport);
   $("#reportButton1").click(genReport);
+  $("#saveReport").click(saveReportCall);
   
 });
 
@@ -640,6 +655,17 @@ function getPHPSessId() {
 
     return phpSessionId.substring(10, end);
 }
+
+function saveReportCall(){
+	        $.ajax({
+	            type :'POST',
+	            url  : 'saveCurrentPageInDB.php',
+	            success : function(data) {
+	              $('#reportIDDiv span').text('Report Created Successfully. Report ID : '+data);
+	              $('#reportIDLinkDiv').append('<a href="http://localhost/LTER_Data_Info_Reporting_Tool/html/recreateReport.php?ID='+data+'">Link</a>');
+	           }
+	        })
+	}
 </script>
 </body>
 </html>
