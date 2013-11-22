@@ -25,7 +25,7 @@ class MyDB extends SQLite3 {
 }
 $db = new MyDB ();
 
-$recordID = $_GET ['ID'];
+$recordID =  mysql_real_escape_string($_GET ['ID']);
 
 $error = false;
 
@@ -51,6 +51,11 @@ $i = 0;
 while ( $row = $results->fetchArray () ) {
 	$resultRecentPackages [$i ++] = $row;
 }
+
+$stmt = $db->prepare ( 'SELECT * FROM saveReportComments where reportID=:id' );
+$stmt->bindValue ( ':id', $recordID, SQLITE3_INTEGER );
+$result = $stmt->execute ();
+$retrievedComments = $result->fetchArray ();
 
 ?>
   <body>
@@ -110,6 +115,7 @@ while ( $row = $results->fetchArray () ) {
 					by LTER sites in the network information system. It includes the
 					total by quarter.</p>
 			</div>
+			<div style="text-align: center"><?php echo $retrievedComments['comment1'] ;?> </div><br><br>
 			<div id="chart_div_totalDataPackages"
 				style="width: 1000px; height: 400px;"></div>
 
@@ -119,12 +125,14 @@ while ( $row = $results->fetchArray () ) {
 				<p>This graphic reflects the number of data package downloads from
 					the LTER network information system by quarter.</p>
 			</div>
+			<div style="text-align: center"><?php echo $retrievedComments['comment2'] ;?> </div><br><br>
 			<div id="chart_div_dataPackagesDownloads"
 				style="width: 1000px; height: 400px;"></div>
 
 
 			<div class="starter-template">
 				<p class="lead">Network Summary Statistics</p>
+				<div style="text-align: center"><?php echo $retrievedComments['comment3'] ;?> </div><br><br>
 				<table class="table table-striped table-bordered">
 					<tr>
 						<th></th>
@@ -150,6 +158,7 @@ while ( $row = $results->fetchArray () ) {
 				</table>
 
 				<table class="table table-striped table-bordered">
+				
 					<tr>
 						<th></th>
 						<th>Current Quarter - <?php echo $retrievedData['AsOfCurrentQuarterDate']; ?></th>
@@ -178,12 +187,13 @@ while ( $row = $results->fetchArray () ) {
 					during the current reporting period. It is intended to provide a
 					flavor of the type of research data being made accessible through
 					the LTER Network Information System.</p>
+					<div style="text-align: center"><?php echo $retrievedComments['comment4'] ;?> </div><br><br>
 				<table class="table table-striped table-bordered">
 					<tr>
-						<th>Data Package Identifier</th>
-						<th>Creators</th>
-						<th>Publication Date</th>
-						<th>Title</th>
+						<th style="text-align: center">Data Package Identifier</th>
+						<th style="text-align: center">Creators</th>
+						<th style="text-align: center">Publication Date</th>
+						<th style="text-align: center">Title</th>
 					</tr>
 					<?php
 					global $resultRecentPackages;
@@ -218,13 +228,13 @@ while ( $row = $results->fetchArray () ) {
 	<!-- Placed at the end of the document so the pages load faster -->
 	<script type="text/javascript" src="../assets/js/jquery.js"></script>
 	<script type="text/javascript" src="../dist/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="../dist/js/jquery.jeditable.js"></script>
 	<script type="text/javascript" src="//www.google.com/jsapi"></script>
-	<script type="text/javascript"
-		src="//canvg.googlecode.com/svn/trunk/canvg.js"></script>
-	<script type="text/javascript"
-		src="//canvg.googlecode.com/svn/trunk/rgbcolor.js"></script>
-	<script type="text/javascript"
-		src="//canvg.googlecode.com/svn/trunk/StackBlur.js"></script>
+	
+	<script type="text/javascript" src="//canvg.googlecode.com/svn/trunk/canvg.js"></script>
+	<script type="text/javascript"src="//canvg.googlecode.com/svn/trunk/rgbcolor.js"></script>
+	<script type="text/javascript"src="//canvg.googlecode.com/svn/trunk/StackBlur.js"></script>
+	
 	<script type="text/javascript">
       google.load("visualization", "1", {packages:["corechart"]});
       google.setOnLoadCallback(drawChartTotalDataPackages);
@@ -273,126 +283,6 @@ while ( $row = $results->fetchArray () ) {
           var chart = new google.visualization.ColumnChart(document.getElementById('chart_div_dataPackagesDownloads'));
           chart.draw(data, options);
       }
-</script>
-	<script language="JavaScript">
-	$(document).ready(function() {
-		$('#afterSubmit').hide();	
-		$('#reportForm').submit(function() {	
-				if(($('#username').val().length == 0) || ($('#password').val().length == 0)){
-					alert("Please enter username and password for report generation");
-					return false;
-				}
-				if($.trim($('.dropdown').find('#siteSelectButton').text()) == "Select"){
-					alert("Please select the site to generate the report");
-					return false;
-				}		
-				$('#reportForm').hide();
-				$('#afterSubmit').show();
-				$('#site').val($('.dropdown').find('#siteSelectButton').text());				
-			
-		}).change();
-
-		$(".dropdown-menu li a").click(function(){
-			  var selText = $(this).text();	
-			  $(this).parents('.dropdown').find('#siteSelectButton').html(selText+' <span class="caret"></span>');
-			});
-		
-	});
-</script>
-
-	<script type="text/javascript">
-
-    function getImgData(chartContainer) {
-        var chartArea = chartContainer.getElementsByTagName('svg')[0].parentNode;
-        var svg = chartArea.innerHTML;
-        var doc = chartContainer.ownerDocument;
-        var canvas = doc.createElement('canvas');        
-        canvas.setAttribute('width', chartArea.offsetWidth);
-        canvas.setAttribute('height', chartArea.offsetHeight);
-        
-        canvas.setAttribute(
-            'style',
-            'position: absolute; ' +
-            'top: ' + (-chartArea.offsetHeight * 2) + 'px;' +
-            'left: ' + (-chartArea.offsetWidth * 2) + 'px;');
-        doc.body.appendChild(canvas);
-        canvg(canvas, svg);
-        var imgData = canvas.toDataURL('image/png');
-        canvas.parentNode.removeChild(canvas);
-        return imgData;
-      }
-      
-      function saveAsImg(chartContainer) {
-          
-    	var imgData = getImgData(chartContainer);
-    	$.post("savingImage.php",{data:imgData,file:"ImageFile"},downloadImage);
-      }
-
-      function downloadImage() {
-    	  window.location.href =  "download.php?path="+"../download/ImageFile.png";
-       }
-  	
-  	  function downloadReport() {
-  		  sessionID = getPHPSessId();
-  		  if(sessionID == ''){
-  	  		  alert("Report cannot be saved as a file. Please try again later.");
-  	  		  return;
-  		  }
-  		  fileName = "LTERReport"+sessionID+".xlsx"
-    	  window.location.href =  "download.php?path="+"../download/"+fileName;
-      }
-    	      
-	</script>
-
-	<script
-		src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js">
-</script>
-	<script>
-$(document).ready(function(){
- 	
-  $("#reportButton").click(genReport);
-  $("#reportButton1").click(genReport);
-  $("#saveReport").click(saveReportCall);
-  
-});
-
-function genReport(){
-	  var imgData = getImgData(document.getElementById('chart_div_totalDataPackages'));
-	  $.post("savingImage.php",{data:imgData,file:"1"});
-	  var imgData = getImgData(document.getElementById('chart_div_dataPackagesDownloads'));
-	  $.post("savingImage.php",{data:imgData,file:"2"});
-	  $.ajax({url: 'htmlToCSVConversion.php',success:downloadReport});  
-}
-
-function getPHPSessId() {
-    var phpSessionId = document.cookie.match(/PHPSESSID=[^;]+/);
-
-    if(phpSessionId == null) 
-        return '';
-
-    if(typeof(phpSessionId) == 'undefined')
-        return '';
-
-    if(phpSessionId.length <= 0)
-        return '';
-
-    phpSessionId = phpSessionId[0];
-
-    var end = phpSessionId.lastIndexOf(';');
-    if(end == -1) end = phpSessionId.length;
-
-    return phpSessionId.substring(10, end);
-}
-
-function saveReportCall(){
-	        $.ajax({
-	            type :'POST',
-	            url  : 'saveCurrentPageInDB.php',
-	            success : function(data) {
-	              alert( "Data saved successfully. You can access it using the number: " + data );
-	           }
-	        })
-	}
 </script>
 </body>
 </html>

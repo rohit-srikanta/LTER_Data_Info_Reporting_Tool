@@ -10,6 +10,8 @@ $db = new MyDB ();
 session_start ();
 
 $uniqueRecordID = false;
+
+
 $reportID = NULL;
 while ( ! $uniqueRecordID ) {
 	$reportID = rand ( 1000, 999999 );
@@ -62,7 +64,14 @@ $value34 = $_SESSION ['AsOfPreviousYearDate'];
 $value35 = $_SESSION ['totalCreateDataPackageAYearAgo'];
 $value36 = $_SESSION ['site'];
 
+$comment1 = $_POST['comment1'];
+$comment2 = $_POST['comment2'];
+$comment3 = $_POST['comment3'];
+$comment4 = $_POST['comment4'];
+
 date_default_timezone_set ( 'America/Phoenix' );
+
+error_reporting(E_ERROR | E_PARSE);
 
 $value37 = date ( "D M j G:i:s T Y" );
 
@@ -84,6 +93,8 @@ if (isset ( $_SESSION ['recentPackages'] )) {
 		$db->exec ( "INSERT INTO saveRecentPackages(reportID,identifierLink,name,author,date,title) VALUES ($reportID,'$identifierLink','$name','$author','$date','$title')" );
 	}
 }
+
+$db->exec ( "INSERT INTO saveReportComments(reportID,comment1,comment2,comment3,comment4) VALUES ($reportID,'$comment1','$comment2','$comment3','$comment4')" );
 
 $db->close ();
 unset ( $db );

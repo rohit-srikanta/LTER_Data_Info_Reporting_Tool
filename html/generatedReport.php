@@ -327,6 +327,7 @@ global $errorStatus;
 					by LTER sites in the network information system. It includes the
 					total by quarter.</p>
 			</div>
+			<div id="comment_1" style="text-align: center"></div><br><br>
 			<div id="chart_div_totalDataPackages"
 				style="width: 1000px; height: 400px;"></div>
 			<div class="span3" style="text-align: center">
@@ -345,6 +346,7 @@ global $errorStatus;
 				<p>This graphic reflects the number of data package downloads from
 					the LTER network information system by quarter.</p>
 			</div>
+			<div id="comment_2" style="text-align: center"></div><br><br>
 			<div id="chart_div_dataPackagesDownloads"
 				style="width: 1000px; height: 400px;"></div>
 			<div class="span3" style="text-align: center">
@@ -361,6 +363,7 @@ global $errorStatus;
 			?>
 		<div class="starter-template">
 				<p class="lead">Network Summary Statistics</p>
+				<div id="comment_3" style="text-align: center"></div><br><br>
 				<table class="table table-striped table-bordered">
 					<tr>
 						<th></th>
@@ -417,12 +420,13 @@ global $errorStatus;
 					during the current reporting period. It is intended to provide a
 					flavor of the type of research data being made accessible through
 					the LTER Network Information System.</p>
+					<div id="comment_4" style="text-align: center"></div><br><br>
 				<table class="table table-striped table-bordered">
 					<tr>
-						<th>Data Package Identifier</th>
-						<th>Creators</th>
-						<th>Publication Date</th>
-						<th>Title</th>
+						<th style="text-align: center">Data Package Identifier</th>
+						<th style="text-align: center">Creators</th>
+						<th style="text-align: center">Publication Date</th>
+						<th style="text-align: center">Title</th>
 					</tr>
 					<?php
 			
@@ -494,6 +498,7 @@ global $errorStatus;
 	<script type="text/javascript" src="../assets/js/jquery.js"></script>
 	<script type="text/javascript" src="../dist/js/bootstrap.min.js"></script>
 	<script type="text/javascript" src="//www.google.com/jsapi"></script>
+	
 	<script type="text/javascript" src="//canvg.googlecode.com/svn/trunk/canvg.js"></script>
 	<script type="text/javascript" src="//canvg.googlecode.com/svn/trunk/rgbcolor.js"></script>
 	<script type="text/javascript" src="//canvg.googlecode.com/svn/trunk/StackBlur.js"></script>
@@ -546,32 +551,8 @@ global $errorStatus;
           chart.draw(data, options);
       }
 </script>
-	<script language="JavaScript">
-	$(document).ready(function() {
-		$('#afterSubmit').hide();	
-		$('#reportForm').submit(function() {	
-				if(($('#username').val().length == 0) || ($('#password').val().length == 0)){
-					alert("Please enter username and password for report generation");
-					return false;
-				}
-				if($.trim($('.dropdown').find('#siteSelectButton').text()) == "Select"){
-					alert("Please select the site to generate the report");
-					return false;
-				}		
-				$('#reportForm').hide();
-				$('#afterSubmit').show();
-				$('#site').val($('.dropdown').find('#siteSelectButton').text());				
-			
-		}).change();
-
-		$(".dropdown-menu li a").click(function(){
-			  var selText = $(this).text();	
-			  $(this).parents('.dropdown').find('#siteSelectButton').html(selText+' <span class="caret"></span>');
-			});
-		
-	});
-</script>
-
+	
+	
 	<script type="text/javascript">
 
     function getImgData(chartContainer) {
@@ -613,59 +594,119 @@ global $errorStatus;
   		  fileName = "LTERReport"+sessionID+".xlsx"
     	  window.location.href =  "download.php?path="+"../download/"+fileName;
       }
+
+  	function genReport(){
+  	  var imgData = getImgData(document.getElementById('chart_div_totalDataPackages'));
+  	  $.post("savingImage.php",{data:imgData,file:"1"});
+  	  var imgData = getImgData(document.getElementById('chart_div_dataPackagesDownloads'));
+  	  $.post("savingImage.php",{data:imgData,file:"2"});
+  	  $.ajax({url: 'htmlToCSVConversion.php',success:downloadReport});  
+  }
+
+  function getPHPSessId() {
+      var phpSessionId = document.cookie.match(/PHPSESSID=[^;]+/);
+
+      if(phpSessionId == null) 
+          return '';
+
+      if(typeof(phpSessionId) == 'undefined')
+          return '';
+
+      if(phpSessionId.length <= 0)
+          return '';
+
+      phpSessionId = phpSessionId[0];
+
+      var end = phpSessionId.lastIndexOf(';');
+      if(end == -1) end = phpSessionId.length;
+
+      return phpSessionId.substring(10, end);
+  }
+
+  function saveReportCall(){
+	  		var comment1 =  sanitizeInput($("#comment_1").html());
+	  		var comment2 =  sanitizeInput($("#comment_2").html());
+	  		var comment3 =  sanitizeInput($("#comment_3").html());
+	  		var comment4 =  sanitizeInput($("#comment_4").html());
+
+	  		$.ajax({
+  	            type :'POST',
+  	            url  : 'saveCurrentPageInDB.php',
+  	            data : {comment1: comment1,comment2: comment2,comment3: comment3,comment4: comment4},
+  	            success : function(data) {
+  	              $('#reportIDDiv span').text('Report Created Successfully. Report ID : '+data);
+  	              $('#reportIDLinkDiv').html('<a href="recreateReport.php?ID='+data+'">Link to the Report</a>');
+  	           }
+  	        })
+  	}
+
+	function sanitizeInput(comment){
+
+		comment = comment.replace("<script>", "");
+  		comment = comment.replace("<\/script>", "");
+
+  		if(comment == "Click to add comments")
+	  		comment = "";
+  			
+		return comment;
+	}
     	      
 	</script>
 
-	<script
-		src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js">
-</script>
+<script type="text/javascript" src="../dist/js/jquery.jeditable.js"></script>
 	<script>
 $(document).ready(function(){
  	
   $("#reportButton").click(genReport);
   $("#reportButton1").click(genReport);
   $("#saveReport").click(saveReportCall);
-  
+
+  $("#comment_1").editable(function(value, settings) {return(value);},
+          {
+    			 type :'textarea', 
+	             rows : 8, 
+	             cols : 80, 
+	             "submit" : "Save text", 
+	             placeholder : "Click to add comments",
+	             //onblur: "submit",
+	             tooltip   : 'Click to edit...'
+		     }
+   );
+  $("#comment_2").editable(function(value, settings) {return(value);},
+          {
+  			 type :'textarea', 
+	             rows : 8, 
+	             cols : 80, 
+	             "submit" : "Save text", 
+	             placeholder : "Click to add comments",
+	             //onblur: "submit",
+	             tooltip   : 'Click to edit...'
+		     }
+   );
+	$("#comment_3").editable(function(value, settings) {return(value);},
+          {
+  			 type :'textarea', 
+	             rows : 8, 
+	             cols : 80, 
+	             "submit" : "Save text", 
+	             placeholder : "Click to add comments",
+	             //onblur: "submit",
+	             tooltip   : 'Click to edit...'
+		     }
+   );
+	$("#comment_4").editable(function(value, settings) {return(value);},
+          {
+  			 type :'textarea', 
+	             rows : 8, 
+	             cols : 80, 
+	             placeholder : "Click to add comments",
+	             "submit" : "Save text", 
+	             //onblur: "submit",
+	             tooltip   : 'Click to edit...'
+		     }
+   );
 });
 
-function genReport(){
-	  var imgData = getImgData(document.getElementById('chart_div_totalDataPackages'));
-	  $.post("savingImage.php",{data:imgData,file:"1"});
-	  var imgData = getImgData(document.getElementById('chart_div_dataPackagesDownloads'));
-	  $.post("savingImage.php",{data:imgData,file:"2"});
-	  $.ajax({url: 'htmlToCSVConversion.php',success:downloadReport});  
-}
-
-function getPHPSessId() {
-    var phpSessionId = document.cookie.match(/PHPSESSID=[^;]+/);
-
-    if(phpSessionId == null) 
-        return '';
-
-    if(typeof(phpSessionId) == 'undefined')
-        return '';
-
-    if(phpSessionId.length <= 0)
-        return '';
-
-    phpSessionId = phpSessionId[0];
-
-    var end = phpSessionId.lastIndexOf(';');
-    if(end == -1) end = phpSessionId.length;
-
-    return phpSessionId.substring(10, end);
-}
-
-function saveReportCall(){
-	        $.ajax({
-	            type :'POST',
-	            url  : 'saveCurrentPageInDB.php',
-	            success : function(data) {
-	              $('#reportIDDiv span').text('Report Created Successfully. Report ID : '+data);
-	              $('#reportIDLinkDiv').append('<a href="http://localhost/LTER_Data_Info_Reporting_Tool/html/recreateReport.php?ID='+data+'">Link</a>');
-	           }
-	        })
-	}
 </script>
 </body>
 </html>

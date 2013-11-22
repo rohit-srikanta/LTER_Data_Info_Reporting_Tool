@@ -10,6 +10,7 @@ $db = new MyDB();
 
 $db->exec ( 'DROP table saveLTERGeneratedReports' );
 $db->exec ( 'DROP table saveRecentPackages' );
+$db->exec ( 'DROP table saveReportComments' );
 
 if (($db->exec ( 'CREATE TABLE saveLTERGeneratedReports (ID INT PRIMARY KEY NOT NULL,
     quarterTitle0   TEXT    NOT NULL,
@@ -65,6 +66,17 @@ if (($db->exec ( 'CREATE TABLE saveRecentPackages (ID INTEGER PRIMARY KEY AUTOIN
 	echo "Table saveRecentPackages created successfully <br>";
 else
 	echo "Could not create table saveRecentPackages<br>";
+
+if (($db->exec ( 'CREATE TABLE saveReportComments (ID INTEGER PRIMARY KEY AUTOINCREMENT,
+	reportID INT NOT NULL,
+	comment1  TEXT NULL,
+	comment2  TEXT NULL,
+	comment3  TEXT NULL,
+	comment4  TEXT NULL
+	)' )) == true)
+	echo "Table saveReportComments created successfully <br>";
+else
+	echo "Could not create table saveReportComments<br>";
 
 $db->close();
 unset($db);

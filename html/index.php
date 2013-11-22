@@ -177,15 +177,5 @@ function populateDropdownContent() {
 	<script
 		src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js">
 </script>
-	<script>
-$(document).ready(function(){
- 	
-  $("#reportButton").click(genReport);
-  $("#reportButton1").click(genReport);
-  
-});
-
-
-</script>
 </body>
 </html>
