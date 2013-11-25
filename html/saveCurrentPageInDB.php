@@ -10,6 +10,7 @@ session_start ();
 
 $uniqueRecordID = false;
 
+//Creating a unique record id based on random number generation and checking the already existing record ids.
 $reportID = NULL;
 while ( ! $uniqueRecordID ) {
 	$reportID = rand ( 1000, 999999 );
@@ -25,6 +26,7 @@ while ( ! $uniqueRecordID ) {
 		$uniqueRecordID = true;
 }
 
+//Storing all the necessary values in a temporary variable
 $value1 = $_SESSION ['quarterTitle'] ['0'];
 $value2 = $_SESSION ['quarterTitle'] ['1'];
 $value3 = $_SESSION ['quarterTitle'] ['2'];
@@ -62,6 +64,7 @@ $value34 = $_SESSION ['AsOfPreviousYearDate'];
 $value35 = $_SESSION ['totalCreateDataPackageAYearAgo'];
 $value36 = $_SESSION ['site'];
 
+//Storing the post comments into local variable so that they can be inserted into database.
 $comment1 = $_POST ['comment1'];
 $comment2 = $_POST ['comment2'];
 $comment3 = $_POST ['comment3'];
@@ -73,6 +76,8 @@ $value37 = date ( "D M j G:i:s T Y" );
 
 $recordAlreadypresent = false;
 
+
+//Checking if the record with the values already present in the database.
 $stmt = $db->prepare ( 'SELECT ID from saveLTERGeneratedReports where quarterTitle0=:quarterTitle0 and quarterTitle1=:quarterTitle1 and quarterTitle2=:quarterTitle2 and
 		quarterTitle3=:quarterTitle3 and quarterTitle4=:quarterTitle4 and totalDataPackages0=:totalDataPackages0 and totalDataPackages1=:totalDataPackages1 and totalDataPackages2=:totalDataPackages2
 		and totalDataPackages3=:totalDataPackages3 and totalDataPackages4=:totalDataPackages4 and dataPackageDownloads0=:dataPackageDownloads0 and dataPackageDownloads1=:dataPackageDownloads1
@@ -126,11 +131,13 @@ $retrievedData = $result->fetchArray ();
 
 if ($retrievedData ['ID'] == null)
 	$recordAlreadypresent = false;
+//If present, check if the comments are the same. 
 else {		
 	$stmt = $db->prepare ( 'SELECT * FROM saveReportComments where reportID=:id' );
 	$stmt->bindValue ( ':id', $retrievedData ['ID'], SQLITE3_INTEGER );
 	$result = $stmt->execute ();
 	$retrievedComments = $result->fetchArray ();
+	//If comments have changed, then update only the comments and rest of the values are untouched.
 	if ($comment1 != $retrievedComments ['comment1'] || $comment2 != $retrievedComments ['comment2'] || $comment3 != $retrievedComments ['comment3'] || $comment4 != $retrievedComments ['comment4'])
 	{
 		$recordAlreadypresent = $retrievedData ['ID'];
@@ -143,12 +150,14 @@ else {
 		$stmt->execute ();
 		echo "Updated-".$recordAlreadypresent;
 	}
+	//If duplicate in all respect, then do not insert into database
 	else{
 		$recordAlreadypresent = $retrievedData ['ID'];
 		echo "Old-".$recordAlreadypresent;
 	}
 }
 
+//If record does not exist, then create it by entering the data into respective tables.
 if (! $recordAlreadypresent) {
 	
 	if ($db->exec ( "INSERT INTO saveLTERGeneratedReports VALUES ($reportID,'$value1','$value2','$value3','$value4','$value5',$value6,$value7,$value8,$value9,$value10,$value11,$value12,$value13,$value14,$value15,

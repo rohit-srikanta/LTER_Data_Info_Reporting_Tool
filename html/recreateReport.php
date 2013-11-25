@@ -25,15 +25,18 @@ class MyDB extends SQLite3 {
 }
 $db = new MyDB ();
 
+//Check if the passed report id is present in the database.
 $recordID =  intval($_GET ['ID']);
 
 $error = false;
 
+//If not present, report an error.
 if ($recordID == "" || $recordID == NULL) {
 	global $error;
 	$error = true;
 }
 
+//Fetch the necessary information from the database for the given record id.
 $stmt = $db->prepare ( 'SELECT * FROM saveLTERGeneratedReports where id=:id' );
 $stmt->bindValue ( ':id', $recordID, SQLITE3_INTEGER );
 $result = $stmt->execute ();
