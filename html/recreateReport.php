@@ -25,7 +25,7 @@ class MyDB extends SQLite3 {
 }
 $db = new MyDB ();
 
-$recordID =  mysql_real_escape_string($_GET ['ID']);
+$recordID =  intval($_GET ['ID']);
 
 $error = false;
 

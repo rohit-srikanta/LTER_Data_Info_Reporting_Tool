@@ -8,9 +8,10 @@ class MyDB extends SQLite3
 }
 $db = new MyDB();
 
-$db->exec ( 'DROP table saveLTERGeneratedReports' );
-$db->exec ( 'DROP table saveRecentPackages' );
-$db->exec ( 'DROP table saveReportComments' );
+$db->exec ( 'DROP table saveLTERGeneratedReports ' );
+$db->exec ( 'DROP table saveRecentPackages ' );
+$db->exec ( 'DROP table saveReportComments ' );
+$db->exec ( 'VACUUM' );
 
 if (($db->exec ( 'CREATE TABLE saveLTERGeneratedReports (ID INT PRIMARY KEY NOT NULL,
     quarterTitle0   TEXT    NOT NULL,

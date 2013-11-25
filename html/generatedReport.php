@@ -634,17 +634,34 @@ global $errorStatus;
   	            url  : 'saveCurrentPageInDB.php',
   	            data : {comment1: comment1,comment2: comment2,comment3: comment3,comment4: comment4},
   	            success : function(data) {
-  	              $('#reportIDDiv span').text('Report Created Successfully. Report ID : '+data);
-  	              $('#reportIDLinkDiv').html('<a href="recreateReport.php?ID='+data+'">Link to the Report</a>');
+  	             if(data.indexOf("New-") !== -1){
+  	            	data = data.replace("New-","")	;
+	  	            $('#reportIDDiv span').text('Report Created Successfully. Report ID : '+data);
+	  	            $('#reportIDLinkDiv').html('<a href="recreateReport.php?ID='+data+'">Link to the Report</a>');
+  	             }
+  	           	if(data.indexOf("Old-") !== -1){
+  	           	    data = data.replace("Old-","")	;
+	  	            $('#reportIDDiv span').text('Record already present in database. Report ID : '+data);
+	  	            $('#reportIDLinkDiv').html('<a href="recreateReport.php?ID='+data+'">Link to the Report</a>');
+ 	             }
+  	           if(data.indexOf("Updated-") !== -1){
+	            	data = data.replace("Updated-","")	;
+	  	            $('#reportIDDiv span').text('Record comments updated in database. Report ID : '+data);
+	  	            $('#reportIDLinkDiv').html('<a href="recreateReport.php?ID='+data+'">Link to the Report</a>');
+	             }
   	           }
   	        })
   	}
 
 	function sanitizeInput(comment){
 
-		comment = comment.replace("<script>", "");
-  		comment = comment.replace("<\/script>", "");
+		if(typeof comment === 'undefined')
+			return "";
 
+		if(comment.indexOf("script") !== -1){
+			comment = comment.replace("<script>", "");
+  			comment = comment.replace("<\/script>", "");
+		}
   		if(comment == "Click to add comments")
 	  		comment = "";
   			
@@ -668,7 +685,7 @@ $(document).ready(function(){
 	             cols : 80, 
 	             "submit" : "Save text", 
 	             placeholder : "Click to add comments",
-	             //onblur: "submit",
+	             onblur: "submit",
 	             tooltip   : 'Click to edit...'
 		     }
    );
@@ -679,7 +696,7 @@ $(document).ready(function(){
 	             cols : 80, 
 	             "submit" : "Save text", 
 	             placeholder : "Click to add comments",
-	             //onblur: "submit",
+	             onblur: "submit",
 	             tooltip   : 'Click to edit...'
 		     }
    );
@@ -690,7 +707,7 @@ $(document).ready(function(){
 	             cols : 80, 
 	             "submit" : "Save text", 
 	             placeholder : "Click to add comments",
-	             //onblur: "submit",
+	             onblur: "submit",
 	             tooltip   : 'Click to edit...'
 		     }
    );
@@ -701,7 +718,7 @@ $(document).ready(function(){
 	             cols : 80, 
 	             placeholder : "Click to add comments",
 	             "submit" : "Save text", 
-	             //onblur: "submit",
+	             onblur: "submit",
 	             tooltip   : 'Click to edit...'
 		     }
    );
