@@ -481,6 +481,9 @@ global $errorStatus;
 					<div id="reportIDLinkDiv" >
 					<span id="linkSpan"></span>
 					</div>
+					<div id="reportIDEmailDiv" >
+					<span id="EmailSpan"></span>
+					</div>
 				</div>
 				<br><br><br><br>
 				</div>
@@ -629,25 +632,39 @@ global $errorStatus;
 	  		var comment3 =  sanitizeInput($("#comment_3").html());
 	  		var comment4 =  sanitizeInput($("#comment_4").html());
 
+	  		
+
 	  		$.ajax({
   	            type :'POST',
   	            url  : 'saveCurrentPageInDB.php',
   	            data : {comment1: comment1,comment2: comment2,comment3: comment3,comment4: comment4},
   	            success : function(data) {
+
+  	            var link = document.URL;
+  	            
   	             if(data.indexOf("New-") !== -1){
   	            	data = data.replace("New-","")	;
 	  	            $('#reportIDDiv span').text('Report Created Successfully. Report ID : '+data);
 	  	            $('#reportIDLinkDiv').html('<a href="recreateReport.php?ID='+data+'">Link to the Report</a>');
+	  	         	var newLink = "recreateReport.php?ID="+data;
+	  	  	  		link = link.replace("generatedReport.php",newLink);
+	  	            $('#reportIDEmailDiv').html('<a href="mailto:?Subject=LTER%20Network%20Information%20System%20Report&body=Please use the following report ID to retrieve the LTER report.%0d%0a%0d%0aReport ID : '+data+' %0d%0a%0d%0a'+link+'">Email Report ID</a>');
   	             }
   	           	if(data.indexOf("Old-") !== -1){
   	           	    data = data.replace("Old-","")	;
 	  	            $('#reportIDDiv span').text('Record already present in database. Report ID : '+data);
 	  	            $('#reportIDLinkDiv').html('<a href="recreateReport.php?ID='+data+'">Link to the Report</a>');
+	  	          	var newLink = "recreateReport.php?ID="+data;
+	  	  	  		link = link.replace("generatedReport.php",newLink);
+	  	            $('#reportIDEmailDiv').html('<a href="mailto:?Subject=LTER%20Network%20Information%20System%20Report&body=Please use the following report ID to retrieve the LTER report.%0d%0a%0d%0aReport ID : '+data+' %0d%0a%0d%0a'+link+'">Email Report ID</a>');
  	             }
   	           if(data.indexOf("Updated-") !== -1){
 	            	data = data.replace("Updated-","")	;
 	  	            $('#reportIDDiv span').text('Record comments updated in database. Report ID : '+data);
 	  	            $('#reportIDLinkDiv').html('<a href="recreateReport.php?ID='+data+'">Link to the Report</a>');
+	  	         	var newLink = "recreateReport.php?ID="+data;
+	  	  	  		link = link.replace("generatedReport.php",newLink);
+	  	            $('#reportIDEmailDiv').html('<a href="mailto:?Subject=LTER%20Network%20Information%20System%20Report&body=Please use the following report ID to retrieve the LTER report.%0d%0a%0d%0aReport ID : '+data+' %0d%0a%0d%0a'+link+'">Email Report ID</a>');
 	             }
   	           }
   	        })
@@ -722,6 +739,7 @@ $(document).ready(function(){
 	             tooltip   : 'Click to edit...'
 		     }
    );
+	
 });
 
 </script>
